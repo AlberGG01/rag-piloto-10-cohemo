@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Data & Models
+data/
+!data/contracts/*.pdf  # Keep sample contracts if needed, but user might want to ignore them. For now, ignoring data folder entirely except normalized maybe? No, let's ignore data/vectorstore and data/logs
+data/vectorstore/
+data/logs/
+models/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

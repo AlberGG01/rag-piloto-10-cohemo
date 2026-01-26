@@ -1,0 +1,90 @@
+[
+    {
+        "id": "ADV001",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV002",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV003",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV004",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV005",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV006",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV007",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV008",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV009",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV010",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV011",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV012",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV013",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV014",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV015",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV016",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV017",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV018",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV019",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV020",
+        "error": "name 'Tuple' is not defined"
+    },
+    {
+        "id": "ADV_NEG_01",
+        "error": "<class 'str'>"
+    },
+    {
+        "id": "ADV_HAL_01",
+        "error": "<class 'str'>"
+    }
+]
