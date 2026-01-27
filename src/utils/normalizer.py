@@ -26,7 +26,8 @@ REGLAS DE ORO:
 FORMATO DE SALIDA ESPERADO:
 {SECTION_DELIMITER} METADATA GLOBAL {SECTION_DELIMITER}
 - Expediente: [Valor]
-- Contratista: [Valor]
+- Adjudicatario: [Nombre Empresa]
+- Contratista: [Nombre Empresa]
 - Importe: [Valor]
 ...
 

@@ -426,13 +426,18 @@ def create_chunks_from_normalized(md_path: Path) -> List[Dict]:
     # pero para el RAG aprovecharemos que cada sección es clara.
     # Por ahora, usamos el filename para identificar el contrato original.
     original_filename = md_path.name.replace("_normalized.md", ".pdf")
+
+    # Extraer metadata GLOBAL del contenido completo del markdown (igual que en PDF)
+    # Esto asegura que num_contrato, fechas, etc. estén disponibles en todos los chunks
+    global_metadata = extract_metadata_from_text(content, original_filename)
     
     chunks = []
     for section in sections:
         sub_sections = subdivide_large_section(section)
         for sub in sub_sections:
-            # Metadata base
+            # Metadata base combinada con global
             base_metadata = {
+                **global_metadata,  # Incluir num_contrato, contratista, etc.
                 "archivo": original_filename,
                 "seccion": sub["nombre"]
             }

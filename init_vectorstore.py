@@ -108,6 +108,17 @@ def initialize_vectorstore():
     
     print(f"   ✅ Añadidos {added} documentos a la base vectorial")
     
+    # Construir índice BM25 (Léxico)
+    print("   📚 Construyendo índice BM25 (Léxico)...")
+    try:
+        from src.utils.bm25_index import BM25Index
+        bm25 = BM25Index()
+        bm25.build(chunks)
+        print(f"   ✅ Índice BM25 construido para {len(chunks)} chunks")
+    except Exception as e:
+        print(f"   ❌ Error construyendo BM25: {e}")
+        return False
+    
     return True
 
 

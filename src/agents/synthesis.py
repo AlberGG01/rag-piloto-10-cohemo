@@ -40,7 +40,9 @@ class SynthesisAgent(BaseAgent):
                 self.logger.warning(f"Contexto recortado: {len(chunks)} -> {len(chunks_processed)} chunks")
 
             # Preparar contexto y mapa de fuentes
-            context_str, source_map = self._format_context_with_citations(chunks_processed)
+            # --- U-SHAPE REORDERING (MITIGATE LOST IN THE MIDDLE) ---
+            chunks_reordered = self._reorder_chunks_u_shape(chunks_processed)
+            context_str, source_map = self._format_context_with_citations(chunks_reordered)
             
             # --- DEBUG: Ver el mapa de reemplazo ---
             print(f"DEBUG SOURCE MAP: {source_map}")
@@ -138,7 +140,7 @@ NO inventes ni asumas datos que no están en el contexto.
 
 CONSULTA: "{query}"
 
-CONTEXTO DISPONIBLE:
+CONTEXTO DISPONIBLE (Ordenado por Relevancia Estratégica: Inicio y Final son CRÍTICOS):
 {context}
 
 INSTRUCCIONES DE REDACCIÓN:
@@ -178,8 +180,31 @@ Genera la respuesta final ahora:"""
             if "pagina" in meta:
                 sources[archivo]["paginas"].add(meta["pagina"])
         
-        # Convertir sets a listas para serialización
         return [
             {"archivo": k, "paginas": sorted(list(v["paginas"]))}
             for k, v in sources.items()
         ]
+
+    def _reorder_chunks_u_shape(self, chunks: List[Dict]) -> List[Dict]:
+        """
+        Reordena chunks para poner los más relevantes al INICIO y al FINAL.
+        Estrategia: Top 5 -> Inicio, Siguientes 5 -> Final, Resto -> Medio.
+        Objetivo: Mitigar 'Lost in the Middle' phenomenon.
+        """
+        if not chunks:
+            return []
+            
+        # Asumimos que chunks entran ordenados por score (Highest -> Lowest)
+        
+        if len(chunks) <= 5:
+            return chunks
+            
+        top_5 = chunks[:5]
+        next_5 = chunks[5:10] if len(chunks) > 5 else []
+        rest = chunks[10:] if len(chunks) > 10 else []
+        
+        # [TOP 5] + [BASURA/MEDIO] + [TOP 6-10]
+        # De esta forma los mejores están donde el LLM presta más atención
+        reordered = top_5 + rest + next_5
+        
+        return reordered

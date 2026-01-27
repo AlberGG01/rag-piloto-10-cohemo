@@ -59,7 +59,7 @@ class BaseAgent(ABC):
         retry=retry_if_exception_type(RateLimitError),
         before_sleep=before_sleep_log(logger, logging.WARNING)
     )
-    def call_llm(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.0) -> str:
+    def call_llm(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.0, model: str = None) -> str:
         """
         Llamada segura al LLM con Exponential Backoff para manejar Rate Limits (429).
         Wrappeado con Tenacity:
@@ -68,7 +68,8 @@ class BaseAgent(ABC):
         - Log: Warning antes de dormir
         """
         try:
-            return generate_response(prompt, max_tokens, temperature)
+            # Model=None usa el default de llm_config (MODEL_CHATBOT)
+            return generate_response(prompt, max_tokens, temperature, model=model) if model else generate_response(prompt, max_tokens, temperature)
         except Exception as e:
             # Re-raise para que Tenacity lo capture si es RateLimitError (o si queremos atrapar todo)
             # generate_response ya no atrapa excepciones, así que 'e' será la excepción raw de OpenAI

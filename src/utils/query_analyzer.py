@@ -20,10 +20,31 @@ def analyze_query_for_filters(query: str) -> Optional[Dict]:
         Dict con filtros de ChromaDB o None si no aplica filtro
     """
     
-    query_lower = query.lower()
-    filters = {}
+    import re
     
-    # Detección de tipo de información solicitada
+    filters = {}
+    query_lower = query.lower()
+    
+    # 0. Detección de ID de Contrato (PRIORIDAD MÁXIMA)
+    # Patrón: XXX_202X_XXX o similar
+    contract_pattern = r'([A-Z]{3,4}[_ -]?202\d[_ -]?\d{3})'
+    match = re.search(contract_pattern, query, re.IGNORECASE)
+    
+    if match:
+        contract_id = match.group(1).upper().replace("-", "_").replace(" ", "_")
+        # Normalizar formato XXX_YEAR_NUM
+        if not "_" in contract_id and len(contract_id) > 10:
+             # Caso borde, asumir que el usuario escribió algo como CON2024001
+             pass
+        else:
+            filters['num_contrato'] = contract_id
+            logger.info(f"🎯 Query específica sobre contrato {contract_id} - filtrando num_contrato")
+            
+            # CRÍTICO: Si filtramos por contrato, NO filtramos por sección para no perder info
+            # (Ej: Base Imponible puede estar en 'General' o 'Economica')
+            return filters
+
+    # Detección de tipo de información solicitada (Solo si no es filtro por contrato específico)
     
     # 1. Queries sobre avales/garantías
     if any(keyword in query_lower for keyword in ['aval', 'garantía', 'garantia', 'avalista']):
@@ -56,12 +77,14 @@ def analyze_query_for_filters(query: str) -> Optional[Dict]:
         logger.info("🎯 Query sobre subcontratación - filtrando chunks con contiene_subcontratacion=True")
     
     # 7. Queries sobre importes/económicas (solo si no es de avales, prioridad a avales)
-    elif any(keyword in query_lower for keyword in ['importe', 'precio', 'coste', 'costo', 'económica', 'economica']):
-        filters['tipo_seccion'] = 'economicas'
-        logger.info("🎯 Query sobre importes - filtrando tipo_seccion=economicas")
+    # COMENTADO: El filtro por sección es demasiado agresivo y puede ocultar metadatos (Adjudicatario)
+    # que están en otras secciones. Preferimos búsqueda abierta + Ranking.
+    # elif any(keyword in query_lower for keyword in ['importe', 'precio', 'coste', 'costo', 'económica', 'economica', 'base imponible']) and not filters.get('num_contrato'):
+    #    filters['tipo_seccion'] = 'economicas'
+    #    logger.info("🎯 Query sobre importes - filtrando tipo_seccion=economicas")
     
     # 8. Queries sobre fechas/plazos
-    elif any(keyword in query_lower for keyword in ['fecha', 'plazo', 'vencimiento', 'cuando', 'cuándo']):
+    elif any(keyword in query_lower for keyword in ['fecha', 'plazo', 'vencimiento', 'cuando', 'cuándo']) and not filters.get('num_contrato'):
         filters['tipo_seccion'] = 'temporales'
         logger.info("🎯 Query sobre fechas/plazos - filtrando tipo_seccion=temporales")
     

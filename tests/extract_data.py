@@ -7,7 +7,7 @@ import os
 import re
 from pathlib import Path
 
-docs_dir = Path("c:/Users/alber/Piloto Empresa/defense_contracts_system/data/normalized")
+docs_dir = Path(__file__).parent.parent / "data" / "normalized"
 
 avales = []
 importes = []

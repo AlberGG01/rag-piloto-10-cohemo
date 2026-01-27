@@ -15,7 +15,7 @@ from src.config import EXTRACTOR_PROMPT, RESPONDER_PROMPT, CONDENSED_QUESTION_PR
 from src.utils.vectorstore import search, is_vectorstore_initialized
 from src.utils.hybrid_search import hybrid_search  # Hybrid BM25 + Vector
 from src.utils.smart_retrieval import smart_hierarchical_retrieval  # Smart filtering + hierarchical
-from src.utils.reranker import rerank_with_llm  # LLM re-ranking
+from src.utils.reranker import rerank_chunks  # Local BGE Re-ranking
 from src.utils.llm_config import generate_response, is_model_available
 from src.utils.pdf_processor import process_all_contracts
 from src.utils.chunking import extract_metadata_from_text
@@ -415,90 +415,65 @@ def retrieve_and_generate(query: str, history: List[Dict] = None) -> Dict:
         if history:
             last_msg = history[-1]["content"] if history[-1]["role"] == "assistant" else ""
             
-            # =================================================================================
-            # ARQUITECTURA PROFESIONAL: INTENT CLASSIFIER + ENTITY EXTRACTOR
-            # =================================================================================
-            classification_prompt = f"""
-            Eres el CEREBRO de un sistema RAG. Tu única función es decidir cómo buscar información.
+        # =================================================================================
+        # INTEGRACIÓN DEL PLANNER AGENT ("DIVIDE Y VENCERÁS")
+        # =================================================================================
+        from src.agents.planner import PlanningAgent
+        from src.graph.state import WorkflowState
+        
+        try:
+            logger.info("🧠 Ejecutando Planner para estrategia de búsqueda...")
+            planner = PlanningAgent()
+            # Estado efímero para el planner
+            plan_state = WorkflowState(query=query)
+            plan_state = planner.run(plan_state)
             
-            CONVERSACIÓN RECIENTE:
-            Asistente: "{last_msg[:2000]}..."
-            Usuario: "{query}"
+            sub_queries = plan_state.get("sub_queries", [])
+            query_complexity = plan_state.get("query_complexity", "simple")
             
-            TAREA:
-            1. Analiza si el usuario está haciendo una PREGUNTA DE SEGUIMIENTO ("FOLLOW_UP").
-            2. O si está cambiando de tema ("NEW_TOPIC").
-            3. Si es FOLLOW_UP, extrae TODOS los IDs de contrato (XXX_YYYY_ZZZ) relevantes.
-            
-            RESPONDE SIEMPRE EN FORMATO JSON PURO:
-            {{
-                "intent": "FOLLOW_UP" | "NEW_TOPIC",
-                "contracts": ["LISTA_DE_IDS"]
-            }}
-            """
-            
-            try:
-                # Usamos temperatura 0.0 para decisión lógica determinista
-                decision_json = generate_response(classification_prompt, max_tokens=300, temperature=0.0)
-                decision_json = decision_json.replace("```json", "").replace("```", "").strip()
-                import json
-                decision = json.loads(decision_json)
+            if len(sub_queries) > 1:
+                logger.info(f"🧩 ESTRATEGIA MULTI-QUERY ACTIVADA ({len(sub_queries)} pasos)")
+                all_chunks = []
                 
-                intent = decision.get("intent", "NEW_TOPIC")
-                extracted_contracts = decision.get("contracts", [])
+                for sq in sub_queries:
+                    sq_text = sq["query"]
+                    razon = sq.get("rationale", "")
+                    logger.info(f"   🔍 Ejecutando Sub-Query: '{sq_text}' ({razon})")
+                    
+                    # Para sub-queries específicas, usamos smart_retrieval con parámetros equilibrados
+                    sq_chunks = smart_hierarchical_retrieval(sq_text, top_docs=10, chunks_per_doc=3)
+                    all_chunks.extend(sq_chunks)
                 
-                logger.info(f"🧠 DECISIÓN LLM: {intent} | Contratos Contexto: {extracted_contracts}")
+                # DEDUPLICACIÓN DE CHUNKS
+                # Usamos el contenido como clave única
+                seen_contents = set()
+                unique_chunks = []
+                for c in all_chunks:
+                    content_hash = hash(c['contenido'])
+                    if content_hash not in seen_contents:
+                        unique_chunks.append(c)
+                        seen_contents.add(content_hash)
+                        
+                logger.info(f"📚 Total chunks acumulados tras deduplicación: {len(unique_chunks)}")
+                chunks = unique_chunks
                 
-                if intent == "FOLLOW_UP" and extracted_contracts:
-                    contracts = list(set(extracted_contracts))
-                    if len(contracts) == 1:
-                        where_filter = {"num_contrato": contracts[0]}
-                    else:
-                        where_filter = {"num_contrato": {"$in": contracts}}
-                    
-                    logger.info(f"🎯 MODO FOLLOW-UP: Filtrando por {contracts}")
-                    chunks = search(query, k=20, where=where_filter)
-                    
-                # NUEVA LÓGICA: Boost por Keywords de Filename
-                elif any(kw in query.lower() for kw in ["vehiculo", "vehículo", "blindado", "coche", "transporte"]):
-                    logger.info("🚀 MODO BOOST VEHÍCULOS: Priorizando metadatos de filename")
-                    
-                    # 1. FORCE RETRIEVAL: Obligar a buscar el contrato específico si es Blindados
-                    forced_chunks = []
-                    if "blindado" in query.lower():
-                        logger.info("🔒 FORZANDO LECTURA DE CONTRATO DE BLINDADOS (CON_2024_001)")
-                        # Buscar específicamente por este archivo
-                        forced_chunks = search(query, k=5, where={"num_contrato": "CON_2024_001"})
-                        if not forced_chunks:
-                             logger.warning("⚠️ No se pudo forzar la lectura por ID, probando búsqueda amplia")
-                    
-                    # 2. Estrategia híbrida: Buscar normal
-                    chunks = search(query, k=25)
-                    
-                    # 3. Fusión: Asegurar que los forzados estén PRIMEROS
-                    if forced_chunks:
-                         # Eliminar duplicados si ya aparecieron en la búsqueda normal
-                         forced_ids = {c['metadata'].get('row_id') for c in forced_chunks}
-                         chunks = [c for c in chunks if c['metadata'].get('row_id') not in forced_ids]
-                         chunks = forced_chunks + chunks
-                    
-                    # Post-filtrado manual: Bubbling up (por si acaso no entró en forced)
-                    chunks.sort(key=lambda x: 0 if "vehiculo" in x['metadata'].get('archivo', '').lower() or "blindado" in x['metadata'].get('archivo', '').lower() else 1)
-                    
+            else:
+                # Query simple o single-step -> Usar lógica standard optimizada
+                logger.info("🌍 ESTRATEGIA SINGLE-QUERY")
+                
+                # Mantener lógica de Boost por keywords de vehículos si aplica
+                if any(kw in query.lower() for kw in ["vehiculo", "vehículo", "blindado", "coche", "transporte"]):
+                     logger.info("🚀 MODO BOOST VEHÍCULOS DETECTADO")
+                     chunks = search(query, k=25) # Búsqueda amplia directa
                 else:
-                    logger.info("🌍 MODO DISCOVERY: Usando Smart Retrieval para diversidad")
-                    # Usar smart retrieval para garantizar que recuperamos top_docs diferentes
-                    # top_docs=10 asegura diversidad, chunks_per_doc=2 da contexto suficiente
-                    chunks = smart_hierarchical_retrieval(query, top_docs=10, chunks_per_doc=2)
-                    
-            except Exception as e:
-                logger.error(f"Fallo en Intent Classifier: {e}. Usando smart retrieval.")
-                chunks = smart_hierarchical_retrieval(query, top_docs=20, chunks_per_doc=4)
+                     # Standard Smart Retrieval
+                     chunks = smart_hierarchical_retrieval(query, top_docs=20, chunks_per_doc=4)
 
-        else:
-             chunks = smart_hierarchical_retrieval(query, top_docs=20, chunks_per_doc=4)
+        except Exception as e:
+            logger.error(f"⚠️ Fallo en Planner Integration: {e}. Usando fallback legacy.")
+            chunks = smart_hierarchical_retrieval(query, top_docs=20, chunks_per_doc=4)
 
-        if not chunks and not where_filter:
+        if not chunks:
              chunks = smart_hierarchical_retrieval(query, top_docs=20, chunks_per_doc=4)
         
         # RE-RANKING: Aplicar solo si tenemos muchos chunks
@@ -506,7 +481,7 @@ def retrieve_and_generate(query: str, history: List[Dict] = None) -> Dict:
             logger.info("🎯 Re-ranking con LLM...")
             # Fallback seguro para reranking
             try:
-                chunks = rerank_with_llm(query, chunks, top_k=10)
+                chunks = rerank_chunks(query, chunks, top_k=10)
             except Exception as e:
                 logger.error(f"Re-ranking falló: {e}, usando orden original")
                 chunks = chunks[:10]

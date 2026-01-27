@@ -38,15 +38,18 @@ def _get_openai_client() -> OpenAI:
 def generate_response(
     prompt: str,
     max_tokens: int = 700,
-    temperature: float = 0.0
+    temperature: float = 0.0,
+    model: str = MODEL_CHATBOT
 ) -> str:
     """
-    Genera respuesta usando OpenAI GPT-4o-mini.
+    Genera respuesta usando OpenAI.
+    Allows overriding the model (e.g., use gpt-4o-mini for evaluation).
     
     Args:
         prompt: Prompt completo para el LLM
         max_tokens: Máximo de tokens a generar
         temperature: Temperatura (0.0 = determinista, 1.0 = creativo)
+        model: ID del modelo a usar (default: MODEL_CHATBOT)
     
     Returns:
         str: Respuesta generada
@@ -55,7 +58,7 @@ def generate_response(
     client = _get_openai_client()
     
     response = client.chat.completions.create(
-        model=MODEL_CHATBOT,
+        model=model,
         messages=[
             {"role": "user", "content": prompt}
         ],

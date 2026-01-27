@@ -76,25 +76,23 @@ class PlanningAgent(BaseAgent):
 CONSULTA: "{query}"
 
 TIPOS:
-1. simple: Dato específico de un solo contrato.
-2. multi-hop: Relacionar info de múltiples secciones o contratos.
-3. aggregation: Sumar, contar, comparar o listar datos de múltiples documentos.
+1. simple: Dato específico de un solo contrato o entidad.
+2. aggregation: Sumar, comparar, listar o buscar datos de MÚLTIPLES entidades, empresas o códigos de contrato (ej: "Suma los importes de X e Y", "Compara Z y W", "Garantías de CON_A, CON_B y CON_C").
+3. multi-hop: Relacionar info oculta en múltiples secciones.
 
-Responde SOLO con una palabra: simple, multi-hop, o aggregation"""
+Responde SOLO con una palabra: simple, aggregation, o multi-hop"""
 
         response = self.call_llm(prompt, max_tokens=10, temperature=0.0)
         classification = response.strip().lower()
         
         if "simple" in classification: return "simple"
-        if "multi" in classification: return "multi-hop"
-        if "aggregation" in classification or "agregación" in classification: return "aggregation"
-        return "simple"
+        if "aggregation" in classification or "agregación" in classification or "compar" in classification: return "aggregation"
+        return "multi-hop"
     
     def _decompose_query_structured(self, query: str, complexity: str) -> List[SubQuery]:
         """
         Descompone query compleja en objetos SubQuery.
         """
-        # Si es simple, no descomponer realmente
         if complexity == "simple":
             return [{
                 "id": 1,
@@ -103,17 +101,23 @@ Responde SOLO con una palabra: simple, multi-hop, o aggregation"""
                 "dependency": []
             }]
 
-        prompt = f"""Actúa como Senior Planner. Descompón la CONSULTA en pasos atómicos para un sistema RAG.
+        prompt = f"""Actúa como Senior Search Planner.
+Tu objetivo es descomponer preguntas complejas en SUB-QUERIES ATÓMICAS que un motor de búsqueda vectorial pueda resolver fácilmente.
 
-CONSULTA: "{query}"
+CONSULTA ORIGINAL: "{query}"
 COMPLEJIDAD: {complexity}
 
-INSTRUCCIONES:
-1. Divide la consulta en sub-queries de recuperación de información.
-2. Cada sub-query debe ser autosuficiente.
-3. Para 'aggregation' (ej. suma de avales), genera una sub-query genérica que recupere TODOS los datos relevantes, o divídela por criterios si ayuda.
-   - Mejor estrategia para suma: "Extraer importes de avales y garantías de todos los contratos disponibles"
-4. Identifica dependencias si un paso requiere info del anterior.
+ESTRATEGIA PARA AGREGACIÓN/COMPARACIÓN (IMPORTANTE):
+Si la consulta pide datos de MÚLTIPLES empresas o contratos (ej: "Suma los importes de Thales y CyberDefense"):
+1. GENERA UNA SUB-QUERY EXPLÍCITA PARA CADA ENTIDAD.
+2. NO generes una query genérica como "dame info de contratos". Sé específico.
+
+Ejemplo Input: "Suma los importes de Thales y Indra"
+Ejemplo Output:
+[
+  {{ "id": 1, "query": "importe total contrato adjudicado a Thales", "rationale": "Obtener dato para Thales" }},
+  {{ "id": 2, "query": "importe total contrato adjudicado a Indra", "rationale": "Obtener dato para Indra" }}
+]
 
 FORMATO JSON ESPERADO:
 {{
@@ -122,8 +126,7 @@ FORMATO JSON ESPERADO:
       "id": 1,
       "query": "texto de la sub-query",
       "rationale": "por qué necesitamos esto"
-    }},
-    ...
+    }}
   ]
 }}
 
@@ -132,7 +135,6 @@ Responde SOLO con el JSON válido."""
         response = self.call_llm(prompt, max_tokens=1000, temperature=0.0)
         
         try:
-            # Limpiar markdown code blocks
             clean_response = response.replace("```json", "").replace("```", "").strip()
             data = json.loads(clean_response)
             steps = data.get("steps", [])
@@ -165,6 +167,6 @@ Responde SOLO con el JSON válido."""
         """Genera plan textual."""
         lines = [f"PLAN ({complexity.upper()}): {query}"]
         for sq in sub_queries:
-            dep = f" (Depende de: {sq['dependency']})" if sq['dependency'] else ""
+            dep = f" (Depende de: {sq['dependency']})" if sq.get('dependency') else ""
             lines.append(f"{sq['id']}. {sq['query']} {dep}")
         return "\n".join(lines)

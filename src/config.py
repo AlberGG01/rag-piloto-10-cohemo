@@ -29,6 +29,7 @@ MODEL_EMBEDDINGS = os.getenv("MODEL_EMBEDDINGS", "text-embedding-3-large")
 # CONFIGURACIÓN DE CHROMADB
 # ============================================
 VECTORSTORE_PATH = os.getenv("VECTORSTORE_PATH", str(BASE_DIR / "data" / "vectorstore"))
+COLLECTION_NAME = os.getenv("COLLECTION_NAME", "contratos_defensa")
 
 # Dimensiones de embeddings según modelo
 EMBEDDING_DIMENSIONS = 3072  # text-embedding-3-large
