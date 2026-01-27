@@ -1,0 +1,374 @@
+[
+  {
+    "timestamp": "2026-01-27T11:23:47.417414",
+    "filename": "doc_roto_test.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró ID_Contrato.",
+        "Tabla rota: filas mezcladas y columnas desalineadas.",
+        "Texto con basura OCR detectado.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "",
+        "objeto": ""
+      }
+    },
+    "preview_snippet": "\n    # Contrato sin identificador\n    \n    Esta tabla esta rota:\n    | Columna 1 | Columna 2 |\n    |---|---|\n    | Dato A |\n    | Dato B | Extra | Error |\n    \n    Texto con basura OCR: xe2x80x99 ... sdadjkasd\n    "
+  },
+  {
+    "timestamp": "2026-01-27T11:23:49.634340",
+    "filename": "doc_bueno_test.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró ID_Contrato",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "General Dynamics Santa Bárbara Sistemas",
+        "importe_total": "1500000",
+        "objeto": "Mantenimiento de vehículos blindados"
+      }
+    },
+    "preview_snippet": "\n    # PLIEGO DE PRESCRIPCIONES TÉCNICAS\n    ## ID_Contrato: SER_2025_TEST_01\n    \n    **Objeto**: Mantenimiento de vehículos blindados.\n    **Adjudicatario**: General Dynamics Santa Bárbara Sistemas.\n    **Importe Total**: 1.500.000,00 EUR.\n    \n    | Concepto | Precio |\n    |---|---|\n    | Mantenimiento Preventivo | 500.000 |\n    | Mantenimiento Correctivo | 1.000.000 |\n    "
+  },
+  {
+    "timestamp": "2026-01-27T11:25:25.782879",
+    "filename": "doc_roto_test.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró ID_Contrato.",
+        "Tabla rota con filas mezcladas y pipes desalineados.",
+        "Texto con basura OCR detectado.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "",
+        "objeto": ""
+      }
+    },
+    "preview_snippet": "\n# Contrato sin identificador\n\nEsta tabla esta rota:\n| Columna 1 | Columna 2 |\n|---|---|\n| Dato A |\n| Dato B | Extra | Error |\n\nTexto con basura OCR: xe2x80x99 ... sdadjkasd\n"
+  },
+  {
+    "timestamp": "2026-01-27T11:25:29.390760",
+    "filename": "doc_bueno_test.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró el ID_Contrato.",
+        "Posible texto basura en la tabla.",
+        "Estructura de encabezados incompleta.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "General Dynamics Santa Bárbara Sistemas",
+        "importe_total": "1.500.000,00 EUR",
+        "objeto": "Mantenimiento de vehículos blindados"
+      }
+    },
+    "preview_snippet": "\n# PLIEGO DE PRESCRIPCIONES TÉCNICAS\n## ID_Contrato: SER_2025_TEST_01\n\n**Objeto**: Mantenimiento de vehículos blindados.\n**Adjudicatario**: General Dynamics Santa Bárbara Sistemas.\n**Importe Total**: 1.500.000,00 EUR.\n\n| Concepto | Precio |\n|---|---|\n| Mantenimiento Preventivo | 500.000 |\n| Mantenimiento Correctivo | 1.000.000 |\n"
+  },
+  {
+    "timestamp": "2026-01-27T11:26:09.396702",
+    "filename": "doc_roto_test.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró ID_Contrato.",
+        "Tabla rota con filas mezcladas y desalineadas.",
+        "Texto con basura OCR presente.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "",
+        "objeto": ""
+      }
+    },
+    "preview_snippet": "\n# Contrato sin identificador\n\nEsta tabla esta rota:\n| Columna 1 | Columna 2 |\n|---|---|\n| Dato A |\n| Dato B | Extra | Error |\n\nTexto con basura OCR: xe2x80x99 ... sdadjkasd\n"
+  },
+  {
+    "timestamp": "2026-01-27T11:26:11.948081",
+    "filename": "doc_bueno_test.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró el ID_Contrato.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "General Dynamics Santa Bárbara Sistemas",
+        "importe_total": "1.500.000,00 EUR",
+        "objeto": "Mantenimiento de vehículos blindados"
+      }
+    },
+    "preview_snippet": "\n# PLIEGO DE PRESCRIPCIONES TÉCNICAS\n## ID_Contrato: SER_2025_TEST_01\n\n**Objeto**: Mantenimiento de vehículos blindados.\n**Adjudicatario**: General Dynamics Santa Bárbara Sistemas.\n**Importe Total**: 1.500.000,00 EUR.\n\n| Concepto | Precio |\n|---|---|\n| Mantenimiento Preventivo | 500.000 |\n| Mantenimiento Correctivo | 1.000.000 |\n"
+  },
+  {
+    "timestamp": "2026-01-27T11:36:40.969701",
+    "filename": "broken_doc.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró ID_Contrato.",
+        "Tabla de precios desalineada.",
+        "Texto sucio OCR presente.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "350.000 €",
+        "objeto": ""
+      }
+    },
+    "preview_snippet": "# Contrato SER_2024_REPAIR_TEST\n\n## Detalles Económicos\n\nTabla de precios desalineada:\n| Concepto | Precio Unitario | Total |\n|---|---|---|\n| Mantenimiento Fase 1 | 100.000 € |\n| Mantenimiento Fase 2 | 200.000 € | 200.000 € |\n| Repuestos | | 50.000 € |\n\nTotal Contrato: 350.000 €\n\nTexto sucio OCR: x00 x99 ... error"
+  },
+  {
+    "timestamp": "2026-01-27T11:36:45.452052",
+    "filename": "repaired_doc.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró ID_Contrato",
+        "Tabla de precios desalineada",
+        "Texto sucio OCR detectado",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "350.000 €",
+        "objeto": ""
+      }
+    },
+    "preview_snippet": "# Contrato SER_2024_REPAIR_TEST\n\n## Detalles Económicos\n\nTabla de precios desalineada:\n| Concepto              | Precio Unitario | Total      |\n|-----------------------|------------------|------------|\n| Mantenimiento Fase 1  | 100.000 €        | 100.000 €  |\n| Mantenimiento Fase 2  | 200.000 €        | 200.000 €  |\n| Repuestos             |                  | 50.000 €   |\n\nTotal Contrato: 350.000 €  \n\nTexto sucio OCR: x00 x99 ... error"
+  },
+  {
+    "timestamp": "2026-01-27T11:37:23.921040",
+    "filename": "broken_doc.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "ID_Contrato no encontrado.",
+        "Tabla de precios desalineada con filas mezcladas.",
+        "Texto sucio OCR presente.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "350.000 €",
+        "objeto": ""
+      }
+    },
+    "preview_snippet": "# ID_Contrato: SER_2024_REPAIR_TEST\n\n## Detalles Económicos\n\nTabla de precios desalineada:\n| Concepto | Precio Unitario | Total |\n|---|---|---|\n| Mantenimiento Fase 1 | 100.000 € |\n| Mantenimiento Fase 2 | 200.000 € | 200.000 € |\n| Repuestos | | 50.000 € |\n\nTotal Contrato: 350.000 €\n\nTexto sucio OCR: x00 x99 ... error"
+  },
+  {
+    "timestamp": "2026-01-27T11:37:28.455198",
+    "filename": "repaired_doc.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró ID_Contrato.",
+        "Texto sucio OCR presente.",
+        "Tabla de precios desalineada.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "",
+        "objeto": ""
+      }
+    },
+    "preview_snippet": "# ID_Contrato: SER_2024_REPAIR_TEST\n\n## Detalles Económicos\n\nTabla de precios desalineada:\n| Concepto              | Precio Unitario | Total      |\n|-----------------------|------------------|------------|\n| Mantenimiento Fase 1  | 100.000 €        |            |\n| Mantenimiento Fase 2  | 200.000 €        | 200.000 €  |\n| Repuestos             |                  | 50.000 €   |\n\nTotal Contrato: 350.000 €\n\nTexto sucio OCR: x00 x99 ... error"
+  },
+  {
+    "timestamp": "2026-01-27T19:19:22.178422",
+    "filename": "finance.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró el ID_Contrato.",
+        "Texto potencialmente truncado o incompleto.",
+        "Falta información clave como adjudicatario y importe total.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "",
+        "objeto": "Adquisición de repuestos para vehículos.",
+        "security_level": 3
+      }
+    },
+    "preview_snippet": "# ID_Contrato: SER_2024_FINANCE_01\n**Objeto**: Adquisición de repuestos para vehículos.\n**Importe**: 2.500.000 €\n\n## Presupuesto Detallado\nSe detalla el coste de mantenimiento correctivo y preventivo..."
+  },
+  {
+    "timestamp": "2026-01-27T19:19:25.874549",
+    "filename": "intel.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró el ID_Contrato.",
+        "Texto truncado y posiblemente incompleto.",
+        "Falta información clave como adjudicatario e importe total.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "",
+        "objeto": "Despliegue de sistemas de vigilancia satelital.",
+        "security_level": 3
+      }
+    },
+    "preview_snippet": "# ID_Contrato: STRAT_2024_INTEL_01\n**Objeto**: Despliegue de sistemas de vigilancia satelital.\n\n## Vulnerabilidades Críticas\nEl sistema presenta puntos ciegos en la zona norte que deben ser mitigados...\nEstrategia de defensa ante ataques cibernéticos..."
+  },
+  {
+    "timestamp": "2026-01-27T19:19:28.773070",
+    "filename": "manual.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró el ID_Contrato.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "",
+        "objeto": "",
+        "security_level": 1
+      }
+    },
+    "preview_snippet": "# ID_Contrato: PUB_2024_MANUAL_01\n# Manual de Usuario Genérico\n\nEste documento describe el uso básico del extintor en oficinas.\nNo contiene datos sensibles ni precios."
+  },
+  {
+    "timestamp": "2026-01-27T19:19:59.292805",
+    "filename": "intel.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró el ID_Contrato.",
+        "Texto truncado y posiblemente incompleto.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "",
+        "objeto": "Despliegue de sistemas de vigilancia satelital.",
+        "security_level": 3
+      }
+    },
+    "preview_snippet": "# ID_Contrato: STRAT_2024_INTEL_01\n**Objeto**: Despliegue de sistemas de vigilancia satelital.\n\n## Vulnerabilidades Críticas\nEl sistema presenta puntos ciegos en la zona norte que deben ser mitigados...\nEstrategia de defensa ante ataques cibernéticos..."
+  },
+  {
+    "timestamp": "2026-01-27T19:20:01.732462",
+    "filename": "manual.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró el ID_Contrato en el texto auditado.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "",
+        "objeto": "",
+        "security_level": 3
+      }
+    },
+    "preview_snippet": "# ID_Contrato: PUB_2024_MANUAL_01\n# Manual de Usuario Genérico\n\nEste documento describe el uso básico del extintor en oficinas.\nNo contiene datos sensibles ni precios."
+  },
+  {
+    "timestamp": "2026-01-27T19:20:51.337549",
+    "filename": "finance.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró el ID_Contrato.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "",
+        "objeto": "Adquisición de repuestos para vehículos.",
+        "security_level": 3
+      }
+    },
+    "preview_snippet": "# ID_Contrato: SER_2024_FINANCE_01\n**Objeto**: Adquisición de repuestos para vehículos.\n**Importe**: 2.500.000 €\n\n## Presupuesto Detallado\nSe detalla el coste de mantenimiento correctivo y preventivo..."
+  },
+  {
+    "timestamp": "2026-01-27T19:20:55.538099",
+    "filename": "intel.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró el ID_Contrato.",
+        "Texto truncado, falta información clave.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "",
+        "objeto": "Despliegue de red de satélites espía.",
+        "security_level": 4
+      }
+    },
+    "preview_snippet": "# ID_Contrato: STRAT_2024_INTEL_01\n**Objeto**: Despliegue de red de satélites espía.\n\n## INFORME DE INTELIGENCIA\nSe han detectado vulnerabilidades críticas en el flanco este.\nLa ubicación secreta de la base de operaciones especiales ha sido comprometida.\nSe requiere ciberataque ofensivo inmediato."
+  },
+  {
+    "timestamp": "2026-01-27T19:20:57.881991",
+    "filename": "manual.md",
+    "audit_result": {
+      "status": "FAIL",
+      "integrity_score": 0,
+      "detected_errors": [
+        "No se encontró ID_Contrato en el texto auditado.",
+        "CRITICAL: Missing ID_Contrato"
+      ],
+      "metadata": {
+        "id_contrato": "",
+        "adjudicatario": "",
+        "importe_total": "",
+        "objeto": "",
+        "security_level": 1
+      }
+    },
+    "preview_snippet": "# ID_Contrato: PUB_2024_MANUAL_01\n# Manual de Usuario: Extintor Polvo ABC\n\nEste manual es de dominio público.\nInstrucciones:\n1. Quite la anilla.\n2. Apunte a la base del fuego.\nEste documento no contiene información clasificada ni precios."
+  }
+]

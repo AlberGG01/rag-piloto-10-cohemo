@@ -3,8 +3,7 @@
 Workflow State - Estado compartido entre todos los agents del grafo.
 """
 
-from typing import TypedDict, List, Dict, Optional, Annotated, Literal
-from operator import add
+from typing import TypedDict, List, Dict, Optional, Literal
 
 
 class SubQuery(TypedDict):
@@ -37,8 +36,9 @@ class WorkflowState(TypedDict):
     sub_queries: List[SubQuery]
     execution_plan: str
     
+
     # Retrieval
-    retrieved_chunks: Annotated[List[Dict], add]
+    retrieved_chunks: List[Dict]
     retrieval_metadata: Dict
     
     # Evaluation

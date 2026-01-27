@@ -37,7 +37,31 @@ El sistema implementa una estrategia de descomposición cognitiva:
 3.  **Parallel Retrieval**: Ejecuta búsquedas vectoriales independientes para cada sub-query.
 4.  **Refina & Sintetiza**: Un reranker (BGE-M3) filtra el ruido y el Agente de Síntesis (GPT-4o) construye la respuesta final con citas exactas.
 
+
+## 🌟 Funcionalidades Avanzadas (v5.2)
+
+### 🧠 Memoria Contextual (Chat)
+*   **Sliding Window**: Mantiene un historial de los últimos 5 mensajes para entender referencias como *"¿Cuál es su importe?"* sin repetir el nombre del contrato.
+*   **State Isolation**: Gestión de estado segura por `thread_id`.
+
+### 🛡️ Integrity Supervisor & Self-Healing
+Un pipeline de ingesta robusto que garantiza "Calidad 10/10" antes de indexar:
+1.  **Auditoría Estructural**: Detecta tablas rotas y OCR defectuoso.
+2.  **Reparación Automática**: El `RepairAgent` corrige la sintaxis Markdown sin alucinar datos.
+3.  **Data Safety Belt**: Verifica que la reparación no alteró ni un solo dígito con respecto al original (protección contra fraude numérico).
+
+### 👮 Clasificación de Seguridad
+Clasificación automática de documentos en 4 niveles basada en contenido:
+*   **Nivel 1 (Público)**: Manuales.
+*   **Nivel 2 (Interno)**.
+*   **Nivel 3 (Confidencial)**: Contratos estándar y financieros.
+*   **Nivel 4 (Restringido)**: Inteligencia y Estrategia Militar.
+
+### 🚦 Panel de Auditoría HITL
+Interfaz Streamlit dedicada (`src/ui/audit_panel.py`) para revisar documentos bloqueados.
+
 ---
+
 
 ## 🛠️ Instalación y Uso
 

@@ -3,7 +3,7 @@
 Synthesis Agent - Generador de respuesta final con citas.
 """
 
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 from src.agents.base_agent import BaseAgent
 from src.graph.state import WorkflowState
@@ -72,6 +72,7 @@ class SynthesisAgent(BaseAgent):
             # Limpieza final de formato "[Doc: Doc: file...]" si el LLM ya puso brackets
             final_answer = final_answer.replace("[Doc: Doc:", "[Doc:")
             
+
             # Actualizar estado
             state["final_answer"] = final_answer
             state["confidence"] = eval_report.get("score", 0.0) if eval_report else 0.0
@@ -79,6 +80,18 @@ class SynthesisAgent(BaseAgent):
             # Recopilar fuentes únicas para metadata
             sources = self._extract_sources(chunks_processed)
             state["sources"] = sources
+            
+            # --- PERSISTENCIA DE MEMORIA ---
+            # Append interaction to chat_history
+            current_history = state.get("chat_history", [])
+            # Copiar para no mutar references si fuera el caso
+            new_history = list(current_history)
+            
+            new_history.append({"role": "user", "content": query})
+            new_history.append({"role": "assistant", "content": final_answer})
+            
+            state["chat_history"] = new_history
+            # -------------------------------
             
             # Fin del workflow
             state["next_agent"] = "end"
