@@ -62,7 +62,8 @@ def main():
         start_time = time.time()
         try:
             # Execute Chat
-            response = chat(question)
+            chat_result = chat(question)
+            response = chat_result.get("response", "Error")
             duration = time.time() - start_time
             
             # Evaluate

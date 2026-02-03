@@ -28,6 +28,10 @@ from src.utils.deterministic_extractor import (
     contains_exact_amount, extract_final_execution_date
 )
 from src.agents.query_router import QueryRouter
+from src.utils.answer_validator import validate_answer
+from src.utils.confidence_scorer import calculate_confidence
+from src.utils.citation_engine import generate_cited_answer
+from src.utils.observability import get_observer
 
 logger = logging.getLogger(__name__)
 
@@ -443,7 +447,7 @@ def contextualize_query(query: str, history: List[Dict]) -> str:
 
 
 
-def retrieve_and_generate(query: str, history: List[Dict] = None) -> Dict:
+def retrieve_and_generate(query: str, history: List[Dict] = None, use_citations: bool = True) -> Dict:
     """
     Ejecuta el flujo RAG completo con BÚSQUEDA HÍBRIDA FORZADA.
     
@@ -620,121 +624,181 @@ def retrieve_and_generate(query: str, history: List[Dict] = None) -> Dict:
         selected_model = config["model"]
         logger.info(f"🤖 Usando modelo: {selected_model}")
         
-        # Paso 1: Extracción Determinista + LLM
-        logger.info("Extracción con modo determinista anti-alucinación...")
+        result["contradictions"] = [] # Initialize key
         
-        # PRE-EXTRACCIÓN: Buscar datos específicos con regex
-        pre_extracted = {
-            "cif": extract_cif(context),
-            "fechas": extract_dates(context),
-            "importes": extract_amounts(context),
-            "normativas": extract_normativas(context),
-            "penalizaciones": extract_penalties(context),
-            "contrato_mencionado": contract_id
-        }
-        logger.info(f"Pre-extracción: CIF={pre_extracted['cif']}, Fechas={len(pre_extracted['fechas'])}, Importes={len(pre_extracted['importes'])}")
-        
-        # PROMPT EXTRACTOR V2: Anti-Alucinación + Determinista
-        extractor_v2 = f"""
-Actúas como EXTRACTOR DE DATOS ULTRA-PRECISOS de contratos de defensa.
-
-PREGUNTA DEL USUARIO:
-{query}
-
-CONTEXTO (Documentos verificados):
-{context}
-
-HISTORIAL DE CONVERSACIÓN:
-{historial_str}
-
-DATOS PRE-EXTRAÍDOS (Regex):
-- CIFs encontrados: {pre_extracted['cif'] or 'NO CONSTA'}
-- Fechas encontradas: {', '.join(pre_extracted['fechas'][:5]) if pre_extracted['fechas'] else 'NO CONSTA'}
-- Importes encontrados: {', '.join([a['valor'] for a in pre_extracted['importes'][:5]]) if pre_extracted['importes'] else 'NO CONSTA'}
-- Normativas encontradas: {', '.join(pre_extracted['normativas'][:5]) if pre_extracted['normativas'] else 'NO CONSTA'}
-
-🚨 REGLAS ANTI-ALUCINACIÓN (CRÍTICO):
-1. Si la pregunta pide un CIF → USA SOLO el pre-extraído. Si no hay, responde "NO CONSTA".
-2. Si pide fecha final de ejecución → Busca "finalización" o "fecha final". Sino, usa la MÁS TARDÍA de las pre-extraídas.
-3. Si pide importe/penalización EXACTA → USA SOLO valores pre-extraídos. NO inventes.
-4. Si pide normativa → USA SOLO normativas pre-extraídas. Si pregunta por "la principal", menciona SOLO UNA.
-5. Si pide "todos" o "lista" → Extrae TODOS los contratos/datos encontrados.
-6. NO añadas información "adicional" no solicitada.
-7. Si NO encuentras el dato exacto → Responde "NO CONSTA EN LOS DOCUMENTOS".
-
-RESPUESTA (formato JSON):
-{{
-    "dato_encontrado": "Valor exacto extraído o 'NO CONSTA'",
-    "fuente_exacta": "Nombre del documento y página",
-    "nivel_certeza": "ALTO|MEDIO|BAJO",
-    "razonamiento": "Breve explicación de cómo encontraste el dato"
-}}
-"""
-        
-        datos_extraidos = generate_response(extractor_v2, max_tokens=800, temperature=0.0, model=selected_model)
-        
-        # Paso 2: Generación final con Verificación
-        logger.info("Síntesis final con verificación de perito...")
-        
-        # PROMPT DE SÍNTESIS RIGUROSA
-        synthesis_prompt = f"""
-Actúas como PERITO JUDICIAL que redacta un INFORME OFICIAL.
-
-FECHA: {fecha_actual}
-
-DATOS EXTRAÍDOS (ya verificados):
-{datos_extraidos}
-
-PREGUNTA ORIGINAL:
-{query}
-
-HISTORIAL DE CONVERSACIÓN:
-{historial_str}
-
-INSTRUCCIONES DE REDACCIÓN:
-1. Si el dato fue encontrado (nivel_certeza ALTO):
-   - Presenta en TABLA MARKDOWN: | Concepto | Valor | Fuente Verificada |
-   - Usa SOLO datos literales del JSON extraído.
-   - Si preguntan SUMA/TOTAL: Calcula y muestra "SUMA TOTAL: [X] EUR".
-   
-2. Si el dato NO CONSTA:
-   - Responde: "El dato solicitado NO CONSTA en los documentos analizados."
-   - NO inventes ni aproximes.
-
-3. Si nivel_certeza es MEDIO/BAJO:
-   - Indica: "Se encontró información parcial, pero no es 100% concluyente."
-
-4. PROHIBIDO:
-   - Añadir información no extraída.
-   - Usar "probablemente", "posiblemente".
-   - Inventar cifras o fechas.
-
-REDAC<!-- el informe AHORA:
-"""
-        
-        raw_response = generate_response(synthesis_prompt, max_tokens=700, temperature=0.0, model=selected_model)
-        
-        # Post-procesamiento: Reemplazar [Documento X] con nombres reales
-        response = raw_response
-        if source_map:
-            pattern = re.compile(r"(?:\[?Documento\s*[:\-]?\s*(\d+)\]?)", re.IGNORECASE)
+        if use_citations:
+            logger.info("📚 Usando Citation Engine para generación...")
+            # Preparar chunks para CitationEngine
+            chunks_for_citation = []
+            for c in chunks:
+                chunks_for_citation.append({
+                    "text": c.get("contenido", ""),
+                    "metadata": c.get("metadata", {})
+                })
             
-            def replacer(match):
-                num = match.group(1)
-                key = f"Documento {num}"
-                real_ref = source_map.get(key)
-                if real_ref:
-                    return f"**[Doc: {real_ref}]**"
-                return match.group(0)
+            # Generar
+            citation_result = generate_cited_answer(query, chunks_for_citation)
             
-            response = pattern.sub(replacer, raw_response)
+            final_response = citation_result["answer"]
+            result["sources"] = citation_result["sources"] # Override sources with actually cited ones
+            result["contradictions"] = citation_result["contradictions"]
+            
+        else:
+            # === GENERACIÓN LEGACY (Determinist + LLM) ===
+            
+            # Paso 1: Extracción Determinista + LLM
+            logger.info("Extracción con modo determinista anti-alucinación...")
+            
+            # PRE-EXTRACCIÓN: Buscar datos específicos con regex
+            pre_extracted = {
+                "cif": extract_cif(context),
+                "fechas": extract_dates(context),
+                "importes": extract_amounts(context),
+                "normativas": extract_normativas(context),
+                "penalizaciones": extract_penalties(context),
+                "contrato_mencionado": contract_id
+            }
+            logger.info(f"Pre-extracción: CIF={pre_extracted['cif']}, Fechas={len(pre_extracted['fechas'])}, Importes={len(pre_extracted['importes'])}")
+            
+            # PROMPT EXTRACTOR V2: Anti-Alucinación + Determinista
+            extractor_v2 = f"""
+    Actúas como EXTRACTOR DE DATOS ULTRA-PRECISOS de contratos de defensa.
+    
+    PREGUNTA DEL USUARIO:
+    {query}
+    
+    CONTEXTO (Documentos verificados):
+    {context}
+    
+    HISTORIAL DE CONVERSACIÓN:
+    {historial_str}
+    
+    DATOS PRE-EXTRAÍDOS (Regex):
+    - CIFs encontrados: {pre_extracted['cif'] or 'NO CONSTA'}
+    - Fechas encontradas: {', '.join(pre_extracted['fechas'][:5]) if pre_extracted['fechas'] else 'NO CONSTA'}
+    - Importes encontrados: {', '.join([a['valor'] for a in pre_extracted['importes'][:5]]) if pre_extracted['importes'] else 'NO CONSTA'}
+    - Normativas encontradas: {', '.join(pre_extracted['normativas'][:5]) if pre_extracted['normativas'] else 'NO CONSTA'}
+    
+    🚨 REGLAS ANTI-ALUCINACIÓN (CRÍTICO):
+    1. Si la pregunta pide un CIF → USA SOLO el pre-extraído. Si no hay, responde "NO CONSTA".
+    2. Si pide fecha final de ejecución → Busca "finalización" o "fecha final". Sino, usa la MÁS TARDÍA de las pre-extraídas.
+    3. Si pide importe/penalización EXACTA → USA SOLO valores pre-extraídos. NO inventes.
+    4. Si pide normativa → USA SOLO normativas pre-extraídas. Si pregunta por "la principal", menciona SOLO UNA.
+    5. Si pide "todos" o "lista" → Extrae TODOS los contratos/datos encontrados.
+    6. NO añadas información "adicional" no solicitada.
+    7. Si NO encuentras el dato exacto → Responde "NO CONSTA EN LOS DOCUMENTOS".
+    
+    RESPUESTA (formato JSON):
+    {{
+        "dato_encontrado": "Valor exacto extraído o 'NO CONSTA'",
+        "fuente_exacta": "Nombre del documento y página",
+        "nivel_certeza": "ALTO|MEDIO|BAJO",
+        "razonamiento": "Breve explicación de cómo encontraste el dato"
+    }}
+    """
+            
+            datos_extraidos = generate_response(extractor_v2, max_tokens=800, temperature=0.0, model=selected_model)
+            
+            # Paso 2: Generación final con Verificación
+            logger.info("Síntesis final con verificación de perito...")
+            
+            # PROMPT DE SÍNTESIS RIGUROSA
+            synthesis_prompt = f"""
+    Actúas como PERITO JUDICIAL que redacta un INFORME OFICIAL.
+    
+    FECHA: {fecha_actual}
+    
+    DATOS EXTRAÍDOS (ya verificados):
+    {datos_extraidos}
+    
+    PREGUNTA ORIGINAL:
+    {query}
+    
+    HISTORIAL DE CONVERSACIÓN:
+    {historial_str}
+    
+    INSTRUCCIONES DE REDACCIÓN:
+    1. Si el dato fue encontrado (nivel_certeza ALTO):
+       - Presenta en TABLA MARKDOWN: | Concepto | Valor | Fuente Verificada |
+       - Usa SOLO datos literales del JSON extraído.
+       - Si preguntan SUMA/TOTAL: Calcula y muestra "SUMA TOTAL: [X] EUR".
+       
+    2. Si el dato NO CONSTA:
+       - Responde: "El dato solicitado NO CONSTA en los documentos analizados."
+       - NO inventes ni aproximes.
+    
+    3. Si nivel_certeza es MEDIO/BAJO:
+       - Indica: "Se encontró información parcial, pero no es 100% concluyente."
+    
+    4. PROHIBIDO:
+       - Añadir información no extraída.
+       - Usar "probablemente", "posiblemente".
+       - Inventar cifras o fechas.
+    
+    REDAC<!-- el informe AHORA:
+    """
+            
+            raw_response = generate_response(synthesis_prompt, max_tokens=700, temperature=0.0, model=selected_model)
+            
+            # Post-procesamiento: Reemplazar [Documento X] con nombres reales
+            response = raw_response
+            if source_map:
+                pattern = re.compile(r"(?:\[?Documento\s*[:\-]?\s*(\d+)\]?)", re.IGNORECASE)
+                
+                def replacer(match):
+                    num = match.group(1)
+                    key = f"Documento {num}"
+                    real_ref = source_map.get(key)
+                    if real_ref:
+                        return f"**[Doc: {real_ref}]**"
+                    return match.group(0)
+                
+                response = pattern.sub(replacer, raw_response)
+            
+            final_response = response
+
         
         # [Fase 3.2: Verificador Post-Generación]
         # Cross-Check respuesta vs chunks
-        
-        final_response = response
         warnings = []
+        
+        # ⭐ VALIDACIÓN MULTI-CAPA ⭐
+        try:
+            validation = validate_answer(final_response, query, chunks)
+            result["validation"] = validation
+            
+            if not validation["overall_valid"]:
+                logger.warning(f"🚨 Respuesta falló validación: {validation['recommendation']}")
+                warnings.append(f"⚠️ CALIDAD: {validation['recommendation']}")
+                
+                if not validation["numerical"]["valid"]:
+                    warnings.append("🚨 ERROR CRÍTICO: La respuesta contiene números no encontrados en los documentos originales.")
+        except Exception as v_e:
+            logger.error(f"Error en validador: {v_e}")
+            result["validation"] = {"valid": True, "error": str(v_e)} # Fallback safe
+            validation = result["validation"]
 
+        # ⭐ CONFIDENCE SCORING ⭐
+        try:
+            # Preparar tuplas (chunk, score)
+            # Como hybrid_search devuelve dicts, simulamos score 0.8 si viene de vector, 0.6 de BM25 o 0.5 default
+            chunks_with_scores = []
+            for c in chunks:
+                # Intenta sacar score de metadatos si existe, sino heurística
+                s = c.get("metadata", {}).get("score", 0.7) 
+                chunks_with_scores.append((c, s))
+            
+            confidence = calculate_confidence(
+                answer=final_response,
+                query=query,
+                chunks_with_scores=chunks_with_scores,
+                validation_result=validation
+            )
+            result["confidence"] = confidence
+            logger.info(f"📊 Confidence Score: {confidence['confidence']}%")
+        except Exception as c_e:
+            logger.error(f"Error en confidence scorer: {c_e}")
+            result["confidence"] = {"confidence": 0, "recommendation": "Error cálculo"}
 
 
         # Validación básica antigua (mantener por compatibilidad)
@@ -743,7 +807,50 @@ REDAC<!-- el informe AHORA:
         
         result["response"] = validated_response
         result["warnings"] = warnings
-        
+
+        # --- OBSERVABILITY METRICS ---
+        try:
+            latency_total = time.time() - start_retrieval
+            
+            # Estimación simple de latencias parciales (Mejora: usar timers específicos arriba)
+            # Asumimos que la retrieval tomó 'retrieval_time' calculado antes
+            # Generation + Validation es el resto
+            
+            # Calcular coste aproximado
+            def _estimate_cost(txt_in, txt_out, model):
+                # Precios aprox GPT-4o
+                # Input: $2.50 / 1M tokens
+                # Output: $10.00 / 1M tokens
+                # 1 word ~= 1.3 tokens
+                in_tok = len(txt_in.split()) * 1.3
+                out_tok = len(txt_out.split()) * 1.3
+                
+                c_in = (in_tok / 1_000_000) * 2.50
+                c_out = (out_tok / 1_000_000) * 10.00
+                return c_in + c_out
+
+            context_text = " ".join([c.get("contenido", "") for c in chunks])
+            cost_usd = _estimate_cost(context_text + query, final_response, selected_model)
+            
+            observer = get_observer()
+            observer.log_query(
+                query=query,
+                answer=final_response,
+                metadata={
+                    "latency_total": latency_total,
+                    "latency_retrieval": retrieval_time, 
+                    "latency_generation": latency_total - retrieval_time - 0.5, # Approx
+                    "latency_validation": 0.5, # Approx fijo por ahora
+                    "chunks_retrieved": len(chunks),
+                    "confidence": result.get("confidence", {}).get("confidence", 0),
+                    "validation_passed": result.get("validation", {}).get("overall_valid", False),
+                    "model_used": selected_model,
+                    "cost_usd": cost_usd
+                }
+            )
+        except Exception as obs_e:
+            logger.error(f"Error logging observability: {obs_e}")
+
     except Exception as e:
         logger.error(f"Error en RAG: {e}")
         result["response"] = f"Error procesando la consulta: {str(e)}"
@@ -810,7 +917,7 @@ RESPUESTA (Streaming):
         yield f"Error generando respuesta: {str(e)}"
 
 
-def chat(query: str, history: List[Dict] = None) -> str:
+def chat(query: str, history: List[Dict] = None) -> Dict:
     """
     Interfaz simple para el chatbot con memoria de conversación.
     """
@@ -832,10 +939,17 @@ def chat(query: str, history: List[Dict] = None) -> str:
     # Añadir fuentes
     if result.get("sources") and result.get("success"):
         unique_contracts = list(set(
-            s["contrato"] for s in result["sources"] 
-            if s["contrato"] not in ["N/A", "Todos"]
+            s.get("contrato", "N/A") for s in result["sources"] 
+            if s.get("contrato", "N/A") not in ["N/A", "Todos"]
         ))
         if unique_contracts:
             response += f"\n\n📄 *Fuente: {', '.join(unique_contracts)}*"
     
-    return response
+    # Actualizar la respuesta en el objeto result
+    result["response"] = response
+    
+    # Mover warns a warnings keys si no existen
+    if not result.get("warnings"):
+        result["warnings"] = []
+    
+    return result

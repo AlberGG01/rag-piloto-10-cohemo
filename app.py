@@ -260,6 +260,7 @@ def chatbot_tab():
                 """, unsafe_allow_html=True)
             else:
 
+                # Mostrar respuesta con formato markdown
                 st.markdown(f"""
                 <div class="bot-message-container">
                     <div class="bot-card">
@@ -268,6 +269,96 @@ def chatbot_tab():
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+                
+                # ⭐ CITATION ENGINE SOURCES ⭐
+                if msg.get("sources"):
+                    with st.expander("📄 Fuentes Consultadas"):
+                        for source in msg["sources"]:
+                             # Fallback safe
+                            archivo = source.get('archivo', 'Unknown')
+                            contrato = source.get('num_contrato', 'N/A')
+                            nivel = source.get('nivel_seguridad', 'N/A')
+                            st.markdown(f"**📎 {archivo}**")
+                            st.caption(f"Expediente: {contrato} | Clasificación: {nivel}")
+                
+                # ⭐ CONTRADICTIONS ⭐
+                if msg.get("contradictions"):
+                    st.divider()
+                    st.warning("⚠️ **CONTRADICCIONES DETECTADAS**")
+                    for cont in msg["contradictions"]:
+                        st.error(cont.get("text", "Discrepancia detectada."))
+                        if cont.get("requires_human_review"):
+                            st.info("🔍 Requiere revisión manual por experto")
+                
+                # ⭐ CONFIDENCE SCORING ⭐
+                if msg.get("confidence"):
+                    conf = msg["confidence"]
+                    sco = conf.get("confidence", 0)
+                    rec = conf.get("recommendation", "")
+                    
+                    st.metric(
+                        label="📊 Confianza de la Respuesta",
+                        value=f"{sco}%",
+                        delta=rec,
+                        delta_color="normal" if sco >= 70 else "inverse"
+                    )
+                    
+                    with st.expander("📊 Desglose de Confianza"):
+                        st.subheader("Factores de Calidad")
+                        for factor, score in conf.get("breakdown", {}).items():
+                            color = "green" if score >= 70 else "orange" if score >= 40 else "red"
+                            st.markdown(f"**{factor.replace('_', ' ').title()}:** {score}/100")
+                            st.progress(score / 100)
+                        
+                        st.divider()
+                        
+                        fcts = conf.get("factors", {})
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            st.caption(f"Chunks analizados: {fcts.get('chunks_analyzed')}")
+                        with c2:
+                            st.caption(f"Score top chunk: {fcts.get('top_chunk_score'):.2f}")
+                
+                # Mostrar validación si existe
+                if msg.get("validation"):
+                    val = msg["validation"]
+                    if val.get("overall_valid") is not None: # Check simple de estructura
+                        with st.expander("🛡️ Validación de Respuesta"):
+                            c1, c2, c3 = st.columns(3)
+                            
+                            # Integridad Numérica
+                            num_ok = val["numerical"]["valid"]
+                            c1.metric(
+                                "Integridad Numérica",
+                                "✅ OK" if num_ok else "❌ FAIL",
+                                f"{val['numerical']['numbers_checked']} nums"
+                            )
+                            
+                            # Coherencia Lógica
+                            log_ok = val["logical"]["valid"]
+                            c2.metric(
+                                "Coherencia Lógica",
+                                "✅ OK" if log_ok else "❌ FAIL",
+                                f"{int(val['logical']['confidence']*100)}% conf"
+                            )
+                            
+                            # Citación
+                            cit_ok = val["citation"]["valid"]
+                            c3.metric(
+                                "Citación",
+                                "✅ OK" if cit_ok else "⚠️ PARCIAL",
+                                f"{int(val['citation']['citation_rate']*100)}% curado"
+                            )
+                            
+                            # Recomendación
+                            if val.get("recommendation"):
+                                st.info(val["recommendation"])
+                            
+                            # Violaciones
+                            if not num_ok and val["numerical"].get("violations"):
+                                st.error("**Violaciones Numéricas:**")
+                                for v in val["numerical"]["violations"]:
+                                    st.write(f"- {v['number']} ({v['type']}): {v['reason']}")
         
         # Si hay una query pendiente, mostrar indicador de typing
         if st.session_state.get('pending_query'):
@@ -352,9 +443,25 @@ def process_chat_query(query):
         
         # Simular "pensando"
         with st.spinner("🧠 Procesando inteligencia..."):
-            response = chat(query, history=history)
+            result = chat(query, history=history) # Ahora retorna dict
         
-        st.session_state['messages'].append({"role": "assistant", "content": response})
+        # Extraer respuesta y validación
+        response_text = result["response"]
+        validation_data = result.get("validation")
+        confidence_data = result.get("confidence")
+        sources = result.get("sources", [])
+        contradictions = result.get("contradictions", [])
+        
+        msg = {
+            "role": "assistant", 
+            "content": response_text,
+            "validation": validation_data,
+            "confidence": confidence_data,
+            "sources": sources,
+            "contradictions": contradictions
+        }
+        
+        st.session_state['messages'].append(msg)
         logger.info(f"Chat query procesada: {query[:30]}...")
         
     except Exception as e:

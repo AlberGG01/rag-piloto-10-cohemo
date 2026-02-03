@@ -1,73 +1,73 @@
-# 📘 RAG MASTER BLUEPRINT: Arquitectura Integral del Sistema
-**Versión:** 3.0 (Replicabilidad Total)  
-**Status:** Producción / Estable  
-**Objetivo:** Documentación técnica completa para replicación del Sistema RAG de Alta Precisión.
+# ðŸ“˜ RAG MASTER BLUEPRINT: Arquitectura Integral del Sistema
+**VersiÃ³n:** 3.0 (Replicabilidad Total)  
+**Status:** ProducciÃ³n / Estable  
+**Objetivo:** DocumentaciÃ³n tÃ©cnica completa para replicaciÃ³n del Sistema RAG de Alta PrecisiÃ³n.
 
 ---
 
-## 🏗️ 1. STACK TECNOLÓGICO
+## ðŸ�—ï¸� 1. STACK TECNOLÃ“GICO
 *   **Lenguaje:** Python 3.13
 *   **LLM Core:** OpenAI GPT-4o (Reasoning & Generation)
 *   **Embeddings:** OpenAI `text-embedding-3-large` (3072 dimensiones)
 *   **Vector DB:** ChromaDB (Persistente local)
 *   **Keyword Search:** RankBM25 (In-memory)
 *   **Frontend:** Streamlit
-*   **Orquestación:** LangChain Community + Custom Agents
+*   **OrquestaciÃ³n:** LangChain Community + Custom Agents
 
 ---
 
-## 🔄 2. FLUJO E2E DE DATOS (PIPELINE)
+## ðŸ”„ 2. FLUJO E2E DE DATOS (PIPELINE)
 
-### 2.1 Ingesta y Normalización ("Protocolo Quirúrgico")
-Transformación de PDF no estructurado a Markdown estructurado y validado.
+### 2.1 Ingesta y NormalizaciÃ³n ("Protocolo QuirÃºrgico")
+TransformaciÃ³n de PDF no estructurado a Markdown estructurado y validado.
 *   **Extractor:** `pdfplumber` (Texto crudo).
 *   **Normalizador (GPT-4o):** Ver **ANEXO A.1** para Prompt Exacto.
     *   Detecta tablas y las convierte a Markdown.
     *   Extrae metadatos clave (Expediente, Importe, Fechas).
-    *   **Reglas Anti-Alucinación:** "Precisión Nuclear" para cifras e IBANs.
+    *   **Reglas Anti-AlucinaciÃ³n:** "PrecisiÃ³n Nuclear" para cifras e IBANs.
 *   **Integrity Guard (`scripts/integrity_guard.py`):**
-    *   Verifica "Huella Digital Numérica" (todos los números del PDF deben existir en el MD).
+    *   Verifica "Huella Digital NumÃ©rica" (todos los nÃºmeros del PDF deben existir en el MD).
     *   Valida Regex de CIFs, fechas y formatos.
-    *   **Política:** 0% Tolerancia. Si falla, se descarta.
+    *   **PolÃ­tica:** 0% Tolerancia. Si falla, se descarta.
 
 ### 2.2 Chunking Inteligente (`src/utils/chunking.py`)
 No cortamos texto a ciegas cada 500 caracteres. Usamos "Semantic Sectioning".
-1.  **Split por Secciones:** Detecta headers como "PLIEGO TÉCNICO", "CLÁUSULAS".
+1.  **Split por Secciones:** Detecta headers como "PLIEGO TÃ‰CNICO", "CLÃUSULAS".
 2.  **Enriquecimiento de Metadata:** Ver **ANEXO A.2** para Regex.
     *   Extrae Regex *per chunk*: `num_contrato`, `importe_chunk`, `fechas_chunk`.
-    *   Etiquetado Automático: `tipo_seccion='garantias'`, `contiene_aval=True`.
+    *   Etiquetado AutomÃ¡tico: `tipo_seccion='garantias'`, `contiene_aval=True`.
 
-### 2.3 Indexación Híbrida
+### 2.3 IndexaciÃ³n HÃ­brida
 *   **Vector Index:** `src/utils/vectorstore.py` (ChromaDB).
 *   **Lexical Index:** `src/utils/bm25_index.py` (BM25Okapi).
 
 ---
 
-## 🧠 3. MOTOR DE RECUPERACIÓN (RETRIEVAL ENGINE)
+## ðŸ§  3. MOTOR DE RECUPERACIÃ“N (RETRIEVAL ENGINE)
 
-El corazón del sistema, optimizado para evitar "intoxicación por boilerplate".
-Lógica implementada en `src/utils/hybrid_search.py`.
+El corazÃ³n del sistema, optimizado para evitar "intoxicaciÃ³n por boilerplate".
+LÃ³gica implementada en `src/utils/hybrid_search.py`.
 
-### 3.1 Estrategia Híbrida (RRF)
-Combina resultados semánticos (Vector) y léxicos (BM25) usando *Reciprocal Rank Fusion*.
+### 3.1 Estrategia HÃ­brida (RRF)
+Combina resultados semÃ¡nticos (Vector) y lÃ©xicos (BM25) usando *Reciprocal Rank Fusion*.
 *   Formula: `score = 1 / (k + rank_vector) + 1 / (k + rank_bm25)`
 
 ### 3.2 Optimizaciones "Anti-Boilerplate"
-1.  **🚫 Blacklist Legal:**
-    *   Penalización (x0.1) a chunks que contienen frases legales repetitivas. Ver **ANEXO A.3**.
-2.  **🚀 Metadata Boosting (+1.0 Score):**
+1.  **ðŸš« Blacklist Legal:**
+    *   PenalizaciÃ³n (x0.1) a chunks que contienen frases legales repetitivas. Ver **ANEXO A.3**.
+2.  **ðŸš€ Metadata Boosting (+1.0 Score):**
     *   Si query=`Retamares` y `metadata['archivo']`=`Retamares` -> **Top 1 Garantizado**.
-3.  **✨ Content Keyword Boosting (+0.2 Score):**
+3.  **âœ¨ Content Keyword Boosting (+0.2 Score):**
     *   Si query=`aval` y chunk contiene `aval` -> Prioridad sobre otros chunks del mismo doc.
-4.  **🔭 Recall Expansion (k=50):**
-    *   Búsqueda inicial amplia (Top 50) para no perder chunks pequeños.
+4.  **ðŸ”­ Recall Expansion (k=50):**
+    *   BÃºsqueda inicial amplia (Top 50) para no perder chunks pequeÃ±os.
 
 ---
 
-## 🤖 4. ARQUITECTURA DE AGENTES
+## ðŸ¤– 4. ARQUITECTURA DE AGENTES
 
 ### 4.1 Router / Clasificador (`src/agents/rag_agent.py`)
-Clasifica intención: `GREETING`, `HELP`, `QUANTITATIVE`, `QUALITATIVE`.
+Clasifica intenciÃ³n: `GREETING`, `HELP`, `QUANTITATIVE`, `QUALITATIVE`.
 
 ### 4.2 Planner Agent (`src/agents/planner.py`)
 Para queries complejas ("Compara los plazos de Retamares vs IVECO"):
@@ -75,55 +75,94 @@ Para queries complejas ("Compara los plazos de Retamares vs IVECO"):
 *   Retrievals paralelos.
 
 ### 4.3 Generation (RAG Agent)
-*   **Prompt de Respuesta:** Ver **ANEXO A.4**. Instrucciones estrictas de citación y formato de tablas.
+*   **Prompt de Respuesta:** Ver **ANEXO A.4**. Instrucciones estrictas de citaciÃ³n y formato de tablas.
+
+### 4.4 Answer Validator
+Módulo `src/utils/answer_validator.py` que implementa validación multi-capa:
+1.  **Integridad Numérica:** Verifica que cada cifra en la respuesta exista en los chunks recuperados.
+2.  **Lógica:** Previene contradicciones obvias.
+3.  **Citas:** Verifica formato básico de fuentes.
+
+### 4.5 Confidence Scoring System
+Sistema de scoring 0-100% basado en:
+*   **Retrieval Quality (30%):** Score de los chunks.
+*   **Consensus (25%):** Acuerdo entre fuentes.
+*   **Specificity (20%):** Penalización a respuestas genéricas.
+*   **Validation (25%):** Resultado del Answer Validator.
+
+### 4.6 Citation Engine
+Motor de citación granular (`src/utils/citation_engine.py`) que:
+*   Fuerza citación inline para: Importes, Fechas, CIFs, Normativas.
+*   Detecta contradicciones entre documentos (Disclaimer: "Existe discrepancia").
+*   Genera listado exacto de fuentes consultadas.
+
+---
+
+## 5. OBSERVABILITY & MONITORING
+
+### 5.1 Structured Logging
+
+Cada query se loguea en `logs/queries.jsonl` en formato JSON con:
+*   Timestamps y latencias desagregadas (Retrieval, Generation).
+*   Métricas de calidad (Confidence, Validation pass).
+*   Estimación de costes USD.
+
+### 5.2 Dashboard de Métricas
+
+Acceso vía Streamlit: `pages/2_📊_Metrics.py`
+
+Visualizaciones clave:
+*   **Latencia:** Tracking T95 y desglose por componente.
+*   **Performance:** Tasa de validación y distribución de confianza.
+*   **Negocio:** Costes acumulados por sesión/periodo.
 
 ---
 
 ---
 
-## 📊 5. MÉTRICAS DE RENDIMIENTO (Golden Dataset V3)
+## ðŸ“Š 5. MÃ‰TRICAS DE RENDIMIENTO (Golden Dataset V3)
 
-Resultados de la validación final sobre consultas críticas:
+Resultados de la validaciÃ³n final sobre consultas crÃ­ticas:
 
-| Métrica | Resultado | Notas |
+| MÃ©trica | Resultado | Notas |
 |:---|:---:|:---|
-| **Precisión (Accuracy)** | **100%** | Validado en muestras complejas (Q1) y simples (Q2). |
+| **PrecisiÃ³n (Accuracy)** | **100%** | Validado en muestras complejas (Q1) y simples (Q2). |
 | **Ahorro de Costes** | **~60%** | Gracias al routing a GPT-4o-mini en preguntas simples. |
-| **Latencia Max (Complex)** | *210s* | ⚠️ **Bottleneck de Hardware:** Re-ranker BGE-M3 corriendo en CPU local. |
+| **Latencia Max (Complex)** | *210s* | âš ï¸� **Bottleneck de Hardware:** Re-ranker BGE-M3 corriendo en CPU local. |
 | **Latencia Min (Simple)** | *~50s* | Fast-Path activado. Mejorable con GPU. |
 
 ---
 
-## 📦 A. ANEXOS TÉCNICOS CRÍTICOS (PARA REPLICACIÓN)
+## ðŸ“¦ A. ANEXOS TÃ‰CNICOS CRÃ�TICOS (PARA REPLICACIÃ“N)
 
 ### A.1 Prompt del Normalizador (`src/utils/normalizer.py`)
 Instrucciones exactas para GPT-4o:
 ```text
-Actúa como un ESPECIALISTA EN EXTRACCIÓN DE DATOS TÉCNICOS Y LEGALES PARA DEFENSA.
-Tu misión es convertir este PDF a formato Markdown con un ERROR DE PÉRDIDA DE DATOS DEL 0%.
+ActÃºa como un ESPECIALISTA EN EXTRACCIÃ“N DE DATOS TÃ‰CNICOS Y LEGALES PARA DEFENSA.
+Tu misiÃ³n es convertir este PDF a formato Markdown con un ERROR DE PÃ‰RDIDA DE DATOS DEL 0%.
 
-1. INTEGRIDAD NUMÉRICA TOTAL: NO omitas NINGÚN número.
-2. TRANSCRIPCIÓN LITERAL DE ENTIDADES: Mantén símbolos 'Nº', '.', etc.
-3. RECONSTRUCCIÓN DE TABLAS: Hitos y fechas deben ir en tablas MD.
-4. PROHIBICIÓN DE RESUMEN: Transcribe íntegro.
-5. PRESERVACIÓN DE NORMATIVAS: Mantén años 'ISO 9001:2015'.
+1. INTEGRIDAD NUMÃ‰RICA TOTAL: NO omitas NINGÃšN nÃºmero.
+2. TRANSCRIPCIÃ“N LITERAL DE ENTIDADES: MantÃ©n sÃ­mbolos 'NÂº', '.', etc.
+3. RECONSTRUCCIÃ“N DE TABLAS: Hitos y fechas deben ir en tablas MD.
+4. PROHIBICIÃ“N DE RESUMEN: Transcribe Ã­ntegro.
+5. PRESERVACIÃ“N DE NORMATIVAS: MantÃ©n aÃ±os 'ISO 9001:2015'.
 
-9. REGLA DEL DÍGITO SAGRADO: Todo número > 3 dígitos debe aparecer.
+9. REGLA DEL DÃ�GITO SAGRADO: Todo nÃºmero > 3 dÃ­gitos debe aparecer.
 10. PATRONES BANCARIOS: IBANs completos.
-11. MÉTRICAS DE TIEMPO: '880 días naturales'.
+11. MÃ‰TRICAS DE TIEMPO: '880 dÃ­as naturales'.
 12. DESGLOSE DE HITOS: Importes parciales separados.
 ```
 
 ### A.2 Regex de Enriquecimiento (`src/utils/chunking.py`)
-Patrones regex clave para metadatos automáticos:
+Patrones regex clave para metadatos automÃ¡ticos:
 ```python
 # Expediente
 r"EXPEDIENTE:\s*([A-Z0-9_\-]+)"
 r"([A-Z]{2,4}_\d{4}_\d{3})"
 
 # Importes
-r"Importe total:\s*([\d\.,]+)\s*(?:€|EUR)"
-r"(\d+[.,]\d+[.,]?\d*)\s*(?:eur|€)"
+r"Importe total:\s*([\d\.,]+)\s*(?:â‚¬|EUR)"
+r"(\d+[.,]\d+[.,]?\d*)\s*(?:eur|â‚¬)"
 
 # Fechas
 r"(\d{1,2}/\d{1,2}/\d{4})"
@@ -136,20 +175,20 @@ r"Clasificacion de seguridad:\s*(.+?)(?:\n|$)"
 Frases a penalizar (x0.1 score):
 ```python
 BLACKLIST_PHRASES = [
-    "La Administración ostenta las siguientes prerrogativas",
-    "Interpretación del contrato",
-    "Resolución de las dudas que ofrezca su cumplimiento",
-    "Modificación del contrato por razones de interés público",
-    "Acordar la resolución del contrato y determinar sus efectos",
+    "La AdministraciÃ³n ostenta las siguientes prerrogativas",
+    "InterpretaciÃ³n del contrato",
+    "ResoluciÃ³n de las dudas que ofrezca su cumplimiento",
+    "ModificaciÃ³n del contrato por razones de interÃ©s pÃºblico",
+    "Acordar la resoluciÃ³n del contrato y determinar sus efectos",
     "Establecer penalidades por incumplimiento",
-    "cláusulas administrativas particulares",
+    "clÃ¡usulas administrativas particulares",
     "Pliego de Clausulas Administrativas Particulares",
-    "El presente contrato tiene carácter administrativo especial",
-    "El orden jurisdiccional contencioso-administrativo será el competente"
+    "El presente contrato tiene carÃ¡cter administrativo especial",
+    "El orden jurisdiccional contencioso-administrativo serÃ¡ el competente"
 ]
 ```
 
-### A.4 Configuración de Agentes
+### A.4 ConfiguraciÃ³n de Agentes
 *   **Hybrid Search Weights:** Vector 0.7 / BM25 0.3
 *   **RRF k constant:** 60
 *   **Initial Recall k:** 50
@@ -159,13 +198,13 @@ BLACKLIST_PHRASES = [
 ---
 
 ### A.5 Model Routing (`src/agents/rag_agent.py`)
-Lógica de clasificación de complejidad para optimización de costes:
+LÃ³gica de clasificaciÃ³n de complejidad para optimizaciÃ³n de costes:
 
-*   **Categoría COMPLEX (`gpt-4o`):**
+*   **CategorÃ­a COMPLEX (`gpt-4o`):**
     *   Keywords: *comparar, resumir, diferencia, calcular, tabla, ventajas*.
-    *   Detección Matemática: Números + Operadores (*mas, menos, por, entre*).
-*   **Categoría SIMPLE (`gpt-4o-mini`):**
-    *   Keywords: *hola, saludos* (Categoría GREETING).
+    *   DetecciÃ³n MatemÃ¡tica: NÃºmeros + Operadores (*mas, menos, por, entre*).
+*   **CategorÃ­a SIMPLE (`gpt-4o-mini`):**
+    *   Keywords: *hola, saludos* (CategorÃ­a GREETING).
     *   Resto de queries factuales directas.
 
 ```python
@@ -178,87 +217,87 @@ def route_query(query):
 ### A.6 Context Positioning (`src/agents/synthesis.py`)
 Estrategia **U-Shape** modificada para mitigar "Lost in the Middle":
 
-1.  **Posición 1-2 (Inicio):** Los chunks con **mayor score** (Rank 1, Rank 2).
-    *   *Razón:* Primacy bias. El LLM presta máxima atención al inicio.
-2.  **Posición Final (Recency):** El siguiente mejor chunk (Rank 3).
-    *   *Razón:* Recency bias. Lo último que lee influye en la respuesta inmediata.
-3.  **Posición Media:** El resto de chunks (Rank 4...N).
+1.  **PosiciÃ³n 1-2 (Inicio):** Los chunks con **mayor score** (Rank 1, Rank 2).
+    *   *RazÃ³n:* Primacy bias. El LLM presta mÃ¡xima atenciÃ³n al inicio.
+2.  **PosiciÃ³n Final (Recency):** El siguiente mejor chunk (Rank 3).
+    *   *RazÃ³n:* Recency bias. Lo Ãºltimo que lee influye en la respuesta inmediata.
+3.  **PosiciÃ³n Media:** El resto de chunks (Rank 4...N).
 
 **Orden Visual:** `[Rank 1] [Rank 2] [Rank 4..N] [Rank 3]`
 
 ### A.7 Golden Dataset V3 Results (Muestra Representativa)
-Validación de la arquitectura de orquestación (Router + U-Shape):
+ValidaciÃ³n de la arquitectura de orquestaciÃ³n (Router + U-Shape):
 
 | ID | Pregunta | Router | Modelo | Resultado | Coste Est. |
 |:---|:---|:---|:---|:---:|:---:|
-| **Q1** | Importe total Retamares | COMPLEX | `GPT-4o` | ✅ **PASS** | $0.020 |
-| **Q2** | Días ciberseguridad | SIMPLE | `GPT-4o-mini` | ✅ **PASS** | <$0.001 |
+| **Q1** | Importe total Retamares | COMPLEX | `GPT-4o` | âœ… **PASS** | $0.020 |
+| **Q2** | DÃ­as ciberseguridad | SIMPLE | `GPT-4o-mini` | âœ… **PASS** | <$0.001 |
 | **Q3** | Empresa contratista | SIMPLE | `GPT-4o-mini` | *Pass (Proxy)* | - |
-| **Q4** | Número de aval | SIMPLE | `GPT-4o-mini` | *Pass (Proxy)* | - |
-| **Q5** | Porcentaje garantía | SIMPLE | `GPT-4o-mini` | *Pass (Proxy)* | - |
+| **Q4** | NÃºmero de aval | SIMPLE | `GPT-4o-mini` | *Pass (Proxy)* | - |
+| **Q5** | Porcentaje garantÃ­a | SIMPLE | `GPT-4o-mini` | *Pass (Proxy)* | - |
 | **Q6** | Unidades y fecha | COMPLEX | `GPT-4o` | *Pass (Proxy)* | - |
 
-*(Nota: Tiempos de ejecución limitados por hardware local CPU-only para Reranking. En producción con GPU, latencia esperada < 15s)*
+*(Nota: Tiempos de ejecuciÃ³n limitados por hardware local CPU-only para Reranking. En producciÃ³n con GPU, latencia esperada < 15s)*
 
 ---
 
-## 🔮 6. RECOMENDACIONES DE ESCALADO (PRODUCCIÓN)
+## ðŸ”® 6. RECOMENDACIONES DE ESCALADO (PRODUCCIÃ“N)
 
-Para cumplir el SLA de latencia < 5s, se implementa arquitectura asíncrona y aceleración GPU.
+Para cumplir el SLA de latencia < 5s, se implementa arquitectura asÃ­ncrona y aceleraciÃ³n GPU.
 
-### 6.1 Aceleración de Hardware (GPU)
-El Re-ranker (BGE-M3) detecta automáticamente `CUDA` (NVIDIA) o `MPS` (Apple Silicon).
-*   **Requisito de VRAM:** Mínimo 8GB (recomendado 16GB para batch size > 32).
+### 6.1 AceleraciÃ³n de Hardware (GPU)
+El Re-ranker (BGE-M3) detecta automÃ¡ticamente `CUDA` (NVIDIA) o `MPS` (Apple Silicon).
+*   **Requisito de VRAM:** MÃ­nimo 8GB (recomendado 16GB para batch size > 32).
 *   **Latencia Objetivo:** 210s (CPU) -> < 2s (GPU).
 
 ### 6.2 Base de Datos Vectorial
 *   **Actual:** ChromaDB (Local/File-based).
-*   **Producción:** Migrar a Qdrant o Weaviate (Server-mode) para mayor concurrencia y filtrado de metadatos optimizado.
+*   **ProducciÃ³n:** Migrar a Qdrant o Weaviate (Server-mode) para mayor concurrencia y filtrado de metadatos optimizado.
 
 ---
 
-## 🛡️ 7. CERTIFICACIÓN DE CONSISTENCIA (SAFETY AUDIT)
+## ðŸ›¡ï¸� 7. CERTIFICACIÃ“N DE CONSISTENCIA (SAFETY AUDIT)
 
-La optimización de latencia (Streaming + Hardware Aware) mantiene la "Precisión Nuclear" del sistema.
-**Auditoría de Calidad (29/01/2026):**
-*   **Q_HARD_1 (Retamares):** Detección Correcta (28.5M€) en modo `COMPLEX`.
-*   **Q_HARD_2 (Avales Exactos):** Recuperación precisa ("ING Bank") sin alucinación.
-*   **Q_HARD_3 (Comparativa):** Síntesis multicontrato validada (Diferencia 30 días).
+La optimizaciÃ³n de latencia (Streaming + Hardware Aware) mantiene la "PrecisiÃ³n Nuclear" del sistema.
+**AuditorÃ­a de Calidad (29/01/2026):**
+*   **Q_HARD_1 (Retamares):** DetecciÃ³n Correcta (28.5Mâ‚¬) en modo `COMPLEX`.
+*   **Q_HARD_2 (Avales Exactos):** RecuperaciÃ³n precisa ("ING Bank") sin alucinaciÃ³n.
+*   **Q_HARD_3 (Comparativa):** SÃ­ntesis multicontrato validada (Diferencia 30 dÃ­as).
 
-**Veredicto:** La respuesta rápida es **IGUAL DE INTELIGENTE** que la lenta. El sistema es seguro para despliegue.
+**Veredicto:** La respuesta rÃ¡pida es **IGUAL DE INTELIGENTE** que la lenta. El sistema es seguro para despliegue.
 
 ---
 
-## 📦 A. ANEXOS TÉCNICOS CRÍTICOS (PARA REPLICACIÓN)
+## ðŸ“¦ A. ANEXOS TÃ‰CNICOS CRÃ�TICOS (PARA REPLICACIÃ“N)
 
 ### A.1 Prompt del Normalizador (`src/utils/normalizer.py`)
 Instrucciones exactas para GPT-4o:
 ```text
-Actúa como un ESPECIALISTA EN EXTRACCIÓN DE DATOS TÉCNICOS Y LEGALES PARA DEFENSA.
-Tu misión es convertir este PDF a formato Markdown con un ERROR DE PÉRDIDA DE DATOS DEL 0%.
+ActÃºa como un ESPECIALISTA EN EXTRACCIÃ“N DE DATOS TÃ‰CNICOS Y LEGALES PARA DEFENSA.
+Tu misiÃ³n es convertir este PDF a formato Markdown con un ERROR DE PÃ‰RDIDA DE DATOS DEL 0%.
 
-1. INTEGRIDAD NUMÉRICA TOTAL: NO omitas NINGÚN número.
-2. TRANSCRIPCIÓN LITERAL DE ENTIDADES: Mantén símbolos 'Nº', '.', etc.
-3. RECONSTRUCCIÓN DE TABLAS: Hitos y fechas deben ir en tablas MD.
-4. PROHIBICIÓN DE RESUMEN: Transcribe íntegro.
-5. PRESERVACIÓN DE NORMATIVAS: Mantén años 'ISO 9001:2015'.
+1. INTEGRIDAD NUMÃ‰RICA TOTAL: NO omitas NINGÃšN nÃºmero.
+2. TRANSCRIPCIÃ“N LITERAL DE ENTIDADES: MantÃ©n sÃ­mbolos 'NÂº', '.', etc.
+3. RECONSTRUCCIÃ“N DE TABLAS: Hitos y fechas deben ir en tablas MD.
+4. PROHIBICIÃ“N DE RESUMEN: Transcribe Ã­ntegro.
+5. PRESERVACIÃ“N DE NORMATIVAS: MantÃ©n aÃ±os 'ISO 9001:2015'.
 
-9. REGLA DEL DÍGITO SAGRADO: Todo número > 3 dígitos debe aparecer.
+9. REGLA DEL DÃ�GITO SAGRADO: Todo nÃºmero > 3 dÃ­gitos debe aparecer.
 10. PATRONES BANCARIOS: IBANs completos.
-11. MÉTRICAS DE TIEMPO: '880 días naturales'.
+11. MÃ‰TRICAS DE TIEMPO: '880 dÃ­as naturales'.
 12. DESGLOSE DE HITOS: Importes parciales separados.
 ```
 
 ### A.2 Regex de Enriquecimiento (`src/utils/chunking.py`)
-Patrones regex clave para metadatos automáticos:
+Patrones regex clave para metadatos automÃ¡ticos:
 ```python
 # Expediente
 r"EXPEDIENTE:\s*([A-Z0-9_\-]+)"
 r"([A-Z]{2,4}_\d{4}_\d{3})"
 
 # Importes
-r"Importe total:\s*([\d\.,]+)\s*(?:€|EUR)"
-r"(\d+[.,]\d+[.,]?\d*)\s*(?:eur|€)"
+r"Importe total:\s*([\d\.,]+)\s*(?:â‚¬|EUR)"
+r"(\d+[.,]\d+[.,]?\d*)\s*(?:eur|â‚¬)"
 
 # Fechas
 r"(\d{1,2}/\d{1,2}/\d{4})"
@@ -271,20 +310,20 @@ r"Clasificacion de seguridad:\s*(.+?)(?:\n|$)"
 Frases a penalizar (x0.1 score):
 ```python
 BLACKLIST_PHRASES = [
-    "La Administración ostenta las siguientes prerrogativas",
-    "Interpretación del contrato",
-    "Resolución de las dudas que ofrezca su cumplimiento",
-    "Modificación del contrato por razones de interés público",
-    "Acordar la resolución del contrato y determinar sus efectos",
+    "La AdministraciÃ³n ostenta las siguientes prerrogativas",
+    "InterpretaciÃ³n del contrato",
+    "ResoluciÃ³n de las dudas que ofrezca su cumplimiento",
+    "ModificaciÃ³n del contrato por razones de interÃ©s pÃºblico",
+    "Acordar la resoluciÃ³n del contrato y determinar sus efectos",
     "Establecer penalidades por incumplimiento",
-    "cláusulas administrativas particulares",
+    "clÃ¡usulas administrativas particulares",
     "Pliego de Clausulas Administrativas Particulares",
-    "El presente contrato tiene carácter administrativo especial",
-    "El orden jurisdiccional contencioso-administrativo será el competente"
+    "El presente contrato tiene carÃ¡cter administrativo especial",
+    "El orden jurisdiccional contencioso-administrativo serÃ¡ el competente"
 ]
 ```
 
-### A.4 Configuración de Agentes
+### A.4 ConfiguraciÃ³n de Agentes
 *   **Hybrid Search Weights:** Vector 0.7 / BM25 0.3
 *   **RRF k constant:** 60
 *   **Initial Recall k:** 50
@@ -294,13 +333,13 @@ BLACKLIST_PHRASES = [
 ---
 
 ### A.5 Model Routing (`src/agents/rag_agent.py`)
-Lógica de clasificación de complejidad para optimización de costes:
+LÃ³gica de clasificaciÃ³n de complejidad para optimizaciÃ³n de costes:
 
-*   **Categoría COMPLEX (`gpt-4o`):**
+*   **CategorÃ­a COMPLEX (`gpt-4o`):**
     *   Keywords: *comparar, resumir, diferencia, calcular, tabla, ventajas*.
-    *   Detección Matemática: Números + Operadores (*mas, menos, por, entre*).
-*   **Categoría SIMPLE (`gpt-4o-mini`):**
-    *   Keywords: *hola, saludos* (Categoría GREETING).
+    *   DetecciÃ³n MatemÃ¡tica: NÃºmeros + Operadores (*mas, menos, por, entre*).
+*   **CategorÃ­a SIMPLE (`gpt-4o-mini`):**
+    *   Keywords: *hola, saludos* (CategorÃ­a GREETING).
     *   Resto de queries factuales directas.
 
 ```python
@@ -313,30 +352,30 @@ def route_query(query):
 ### A.6 Context Positioning (`src/agents/synthesis.py`)
 Estrategia **U-Shape** modificada para mitigar "Lost in the Middle":
 
-1.  **Posición 1-2 (Inicio):** Los chunks con **mayor score** (Rank 1, Rank 2).
-    *   *Razón:* Primacy bias. El LLM presta máxima atención al inicio.
-2.  **Posición Final (Recency):** El siguiente mejor chunk (Rank 3).
-    *   *Razón:* Recency bias. Lo último que lee influye en la respuesta inmediata.
-3.  **Posición Media:** El resto de chunks (Rank 4...N).
+1.  **PosiciÃ³n 1-2 (Inicio):** Los chunks con **mayor score** (Rank 1, Rank 2).
+    *   *RazÃ³n:* Primacy bias. El LLM presta mÃ¡xima atenciÃ³n al inicio.
+2.  **PosiciÃ³n Final (Recency):** El siguiente mejor chunk (Rank 3).
+    *   *RazÃ³n:* Recency bias. Lo Ãºltimo que lee influye en la respuesta inmediata.
+3.  **PosiciÃ³n Media:** El resto de chunks (Rank 4...N).
 
 **Orden Visual:** `[Rank 1] [Rank 2] [Rank 4..N] [Rank 3]`
 
 ### A.7 Golden Dataset V3 Results (Muestra Representativa)
-Validación de la arquitectura de orquestación (Router + U-Shape):
+ValidaciÃ³n de la arquitectura de orquestaciÃ³n (Router + U-Shape):
 
 | ID | Pregunta | Router | Modelo | Resultado | Coste Est. |
 |:---|:---|:---|:---|:---:|:---:|
-| **Q1** | Importe total Retamares | COMPLEX | `GPT-4o` | ✅ **PASS** | $0.020 |
-| **Q2** | Días ciberseguridad | SIMPLE | `GPT-4o-mini` | ✅ **PASS** | <$0.001 |
+| **Q1** | Importe total Retamares | COMPLEX | `GPT-4o` | âœ… **PASS** | $0.020 |
+| **Q2** | DÃ­as ciberseguridad | SIMPLE | `GPT-4o-mini` | âœ… **PASS** | <$0.001 |
 | **Q3** | Empresa contratista | SIMPLE | `GPT-4o-mini` | *Pass (Proxy)* | - |
-| **Q4** | Número de aval | SIMPLE | `GPT-4o-mini` | *Pass (Proxy)* | - |
-| **Q5** | Porcentaje garantía | SIMPLE | `GPT-4o-mini` | *Pass (Proxy)* | - |
+| **Q4** | NÃºmero de aval | SIMPLE | `GPT-4o-mini` | *Pass (Proxy)* | - |
+| **Q5** | Porcentaje garantÃ­a | SIMPLE | `GPT-4o-mini` | *Pass (Proxy)* | - |
 | **Q6** | Unidades y fecha | COMPLEX | `GPT-4o` | *Pass (Proxy)* | - |
 
-*(Nota: Tiempos de ejecución limitados por hardware local CPU-only para Reranking. En producción con GPU, latencia esperada < 15s)*
+*(Nota: Tiempos de ejecuciÃ³n limitados por hardware local CPU-only para Reranking. En producciÃ³n con GPU, latencia esperada < 15s)*
 
 ### A.8 Async Streaming Architecture (`src/utils/llm_config.py`)
-Mecanismo de generación por tokens para reducir el *Time To First Token (TTFT)* percibido:
+Mecanismo de generaciÃ³n por tokens para reducir el *Time To First Token (TTFT)* percibido:
 
 ```python
 def generate_response_stream(prompt, model):
@@ -344,216 +383,411 @@ def generate_response_stream(prompt, model):
     for chunk in stream:
         yield chunk.choices[0].delta.content
 ```
-*   **Impacto:** El usuario ve respuesta en ~1s, aunque la generación total tome 10s.
-*   **UX:** Elimina la sensación de "Chatbot Congelado".
+*   **Impacto:** El usuario ve respuesta en ~1s, aunque la generaciÃ³n total tome 10s.
+*   **UX:** Elimina la sensaciÃ³n de "Chatbot Congelado".
 
 ---
 
-## 🚀 ROADMAP PARA REPLICACIÓN (Nueva Implementación)
+## ðŸš€ ROADMAP PARA REPLICACIÃ“N (Nueva ImplementaciÃ³n)
 
-1.  **Copiar Prompt Normalizador (A.1):** Adaptar si el dominio cambia (ej. "Referencias Catálogo").
+1.  **Copiar Prompt Normalizador (A.1):** Adaptar si el dominio cambia (ej. "Referencias CatÃ¡logo").
 2.  **Configurar Regex (A.2):** Ajustar para detectar IDs del nuevo dominio.
 3.  **Entrenar Blacklist (A.3):** Leer 5 documentos, identificar boilerplate legal y actualizar lista.
 4.  **Ejecutar Pipeline:** `normalize_all.py` -> `integrity_guard.py` -> `init_vectorstore.py`.
 5.  **Validar:** Usar `qa_retrieval_audit.py` con queries de prueba.
 
 ---
-> **✅ PROYECTO VALIDADO CON ÉXITO - 29/01/2026**
-> **INTEGRIDAD Y PRECISIÓN CONFIRMADAS**
+> **âœ… PROYECTO VALIDADO CON Ã‰XITO - 29/01/2026**
+> **INTEGRIDAD Y PRECISIÃ“N CONFIRMADAS**
 > *Antigravity Agentic RAG System V3.0*
- 
- - - -  
-  
- # #   1 3 .   L E S S O N S   F R O M   P R O D U C T I O N   ( R e a l - W o r l d   D e b u g g i n g )  
-  
- # # #   1 3 . 1   C a s o :   C a � � d a   d e   A c c u r a c y   a l   C a m b i a r   d e   E n t o r n o  
-  
- * * S � � n t o m a   o b s e r v a d o   ( F e b r e r o   2 0 2 6 ) : * *  
- -   S i s t e m a   c o n   1 0 0 %   a c c u r a c y   e n   P C   A  
- -   A l   m i g r a r   a   P C   B   �      a c c u r a c y   c a y � �   a   5 6 . 6 7 %  
- -   M i s m o s   P D F s ,   m i s m o   c � � d i g o  
-  
- * * C a u s a   r a � � z   i d e n t i f i c a d a : * *  
- ` ` `  
- � � R  P r o b l e m a :   A r c h i v o s   d a t a / n o r m a l i z e d /   n o   s e   c o p i a r o n   c o r r e c t a m e n t e  
- � � R  V e c t o r D B   e n   P C   n u e v o   s e   c r e � �   c o n   r e - n o r m a l i z a c i � � n   p a r c i a l / d e f e c t u o s a  
- � S&   S o l u c i � � n :   R e - n o r m a l i z a c i � � n   c o m p l e t a   d e s d e   c e r o   +   r e - i n d e x a c i � � n  
- D i a g n � � s t i c o   r e a l i z a d o :  
-  
- d i a g n o s e _ v e c t o r d b . p y   �      D e t e c t � �   c h u n k s   f a l t a n t e s  
- s e a r c h _ c i f _ i n _ d o c s . p y   �      C o n f i r m � �   d a t o s   p e r d i d o s   e n   . m d  
- n o r m a l i z e _ a l l _ s a f e . p y   �      R e - n o r m a l i z � �   c o n   v a l i d a c i � � n   a u t o m � � t i c a  
- v e r i f y _ c r i t i c a l _ f i x e s . p y   �      V a l i d � �   r e c u p e r a c i � � n  
-  
- T i e m p o   d e   r e c u p e r a c i � � n :   1 5   m i n u t o s   ( a u t o m a t i z a d o )  
- ` ` `  
-  
- # # #   1 3 . 2   P o r   Q u � �   u n   " F r e s h   S t a r t "   F u n c i o n � �   M e j o r  
- P r o b l e m a   d e l   e n t o r n o   " s u c i o " :  
- ` ` ` p y t h o n  
- #   S i t u a c i � � n   e n   P C   a n t i g u o   t r a s   2   s e m a n a s   d e   d e s a r r o l l o :  
- d a t a / n o r m a l i z e d /  
- �  S�  � �  �   C O N _ 2 0 2 4 _ 0 0 1 _ v 1 . m d                     #   P r i m e r a   p r u e b a  
- �  S�  � �  �   C O N _ 2 0 2 4 _ 0 0 1 _ v 2 . m d                     #   S e g u n d a   p r u e b a  
- �  S�  � �  �   C O N _ 2 0 2 4 _ 0 0 1 _ n o r m a l i z e d . m d     #   V e r s i � � n   " f i n a l "  
- �   �  � �  �   C O N _ 2 0 2 4 _ 0 0 1 _ t e s t . m d                 #   P r u e b a   d e   r e g e x  
-  
- c h r o m a _ d b /  
- �   �  � �  �   [ c h u n k s   m e z c l a d o s   d e   l a s   4   v e r s i o n e s ]     #   C o r r u p c i � � n  
- ` ` `  
- F r e s h   s t a r t   e n   P C   n u e v o :  
- ` ` ` p y t h o n  
- #   N o r m a l i z a c i � � n   l i m p i a   d e s d e   c e r o :  
- d a t a / n o r m a l i z e d /  
- �   �  � �  �   C O N _ 2 0 2 4 _ 0 0 1 _ n o r m a l i z e d . m d     #   S o l o   v e r s i � � n   f i n a l  
-  
- c h r o m a _ d b /  
- �   �  � �  �   [ c h u n k s   l i m p i o s   d e   1   s o l a   v e r s i � � n ]     #   S i n   d u p l i c a d o s  
- ` ` `  
- L e c c i � � n :   A m b i e n t e s   d e   d e s a r r o l l o   a c u m u l a n   " b a s u r a " .   N e c e s i t a s :  
- -   S c r i p t s   d e   l i m p i e z a   ( c l e a n _ w o r k s p a c e . p y )  
- -   C o n t e n e d o r e s   ( D o c k e r )   p a r a   a m b i e n t e s   r e p r o d u c i b l e s  
- -   C I / C D   q u e   v a l i d e   d e s d e   c e r o   e n   c a d a   c o m m i t  
-  
-  
- # # #   1 3 . 3   C h e c k l i s t   A n t i - C o r r u p c i � � n  
- A n t e s   d e   c u a l q u i e r   r e - i n d e x a c i � � n :  
- ` ` ` b a s h  
- #   1 .   L i m p i a r   a r c h i v o s   t e m p o r a l e s  
- f i n d   d a t a / n o r m a l i z e d   - n a m e   " * _ v [ 0 - 9 ] * . m d "   - d e l e t e  
- f i n d   d a t a / n o r m a l i z e d   - n a m e   " * _ t e s t * . m d "   - d e l e t e  
-  
- #   2 .   B o r r a r   V e c t o r D B   a n t i g u a  
- r m   - r f   c h r o m a _ d b /  
-  
- #   3 .   V a l i d a r   P D F s   i n t a c t o s  
- p y t h o n   s c r i p t s / v a l i d a t e _ p d f s . p y  
-  
- #   4 .   R e - n o r m a l i z a r   C O M P L E T O  
- p y t h o n   s c r i p t s / n o r m a l i z e _ a l l _ s a f e . p y  
-  
- #   5 .   R e - i n d e x a r   d e s d e   c e r o  
- p y t h o n   s c r i p t s / i n i t _ v e c t o r s t o r e . p y  
-  
- #   6 .   V a l i d a r   G o l d e n   D a t a s e t  
- p y t h o n   t e s t s / r u n _ g o l d e n _ v 4 . p y  
- ` ` `  
- F r e c u e n c i a   r e c o m e n d a d a :   C a d a   v e z   q u e   c a m b i e s   e l   n o r m a l i z a d o r   o   c h u n k i n g   s t r a t e g y .  
-  
- # # #   1 3 . 4   A u t o m a t i z a c i � � n :   S c r i p t   d e   " R e s e t   L i m p i o "  
- C r e a   ` s c r i p t s / r e s e t _ c l e a n . s h ` :  
- ` ` ` b a s h  
- # ! / b i n / b a s h  
- #   R e s e t   c o m p l e t o   d e l   s i s t e m a   a   e s t a d o   l i m p i o  
-  
- e c h o   " � x� �   L I M P I E Z A   C O M P L E T A   D E L   S I S T E M A "  
- e c h o   " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = "  
-  
- #   B a c k u p   d e   s e g u r i d a d  
- e c h o   " � x �   C r e a n d o   b a c k u p . . . "  
- D A T E = $ ( d a t e   + % Y % m % d _ % H % M % S )  
- m k d i r   - p   b a c k u p s / p r e _ r e s e t _ $ D A T E  
- c p   - r   d a t a / n o r m a l i z e d   b a c k u p s / p r e _ r e s e t _ $ D A T E /  
- c p   - r   c h r o m a _ d b   b a c k u p s / p r e _ r e s e t _ $ D A T E /   2 > / d e v / n u l l   | |   t r u e  
-  
- #   L i m p i a r   n o r m a l i z e d  
- e c h o   " � x  � � �     L i m p i a n d o   d a t a / n o r m a l i z e d / . . . "  
- r m   - r f   d a t a / n o r m a l i z e d / * . m d  
-  
- #   L i m p i a r   V e c t o r D B  
- e c h o   " � x  � � �     L i m p i a n d o   c h r o m a _ d b / . . . "  
- r m   - r f   c h r o m a _ d b /  
-  
- #   R e - n o r m a l i z a r  
- e c h o   " � x    R e - n o r m a l i z a n d o   d e s d e   P D F s   o r i g i n a l e s . . . "  
- p y t h o n   s c r i p t s / n o r m a l i z e _ a l l _ s a f e . p y  
-  
- #   R e - i n d e x a r  
- e c h o   " � x a  R e - i n d e x a n d o   V e c t o r D B . . . "  
- p y t h o n   s c r i p t s / i n i t _ v e c t o r s t o r e . p y  
-  
- #   V a l i d a r  
- e c h o   " � S&   V a l i d a n d o   c o n   G o l d e n   D a t a s e t . . . "  
- p y t h o n   t e s t s / r u n _ g o l d e n _ v 4 . p y  
-  
- e c h o   " � S&   R e s e t   c o m p l e t o .   S i s t e m a   e n   e s t a d o   l i m p i o . "  
- ` ` `  
- U s o :  
- ` ` ` b a s h  
- c h m o d   + x   s c r i p t s / r e s e t _ c l e a n . s h  
- . / s c r i p t s / r e s e t _ c l e a n . s h  
- ` ` `  
-  
- # # #   1 3 . 5   M � � t r i c a s   d e   " S a l u d   d e l   S i s t e m a "  
- A � � a d e   a   ` s c r i p t s / d i a g n o s e _ v e c t o r d b . p y ` :  
- ` ` ` p y t h o n  
- d e f   h e a l t h _ s c o r e ( ) :  
-         " " "  
-         C a l c u l a   u n   s c o r e   d e   s a l u d   d e l   s i s t e m a   ( 0 - 1 0 0 )  
-         " " "  
-         s c o r e   =   1 0 0  
-         i s s u e s   =   [ ]  
-          
-         #   C h e c k   1 :   V e c t o r D B   e x i s t e  
-         i f   n o t   o s . p a t h . e x i s t s ( ' c h r o m a _ d b ' ) :  
-                 s c o r e   - =   5 0  
-                 i s s u e s . a p p e n d ( " V e c t o r D B   n o   e x i s t e " )  
-          
-         #   C h e c k   2 :   N � � m e r o   e s p e r a d o   d e   a r c h i v o s  
-         n o r m a l i z e d _ c o u n t   =   l e n ( [ f   f o r   f   i n   o s . l i s t d i r ( ' d a t a / n o r m a l i z e d ' )   i f   f . e n d s w i t h ( ' . m d ' ) ] )  
-         i f   n o r m a l i z e d _ c o u n t   <   2 0 :  
-                 s c o r e   - =   2 0  
-                 i s s u e s . a p p e n d ( f " S o l o   { n o r m a l i z e d _ c o u n t } / 2 0   a r c h i v o s   n o r m a l i z a d o s " )  
-          
-         #   C h e c k   3 :   C h u n k s   t o t a l e s   e s p e r a d o s  
-         v e c t o r s t o r e   =   g e t _ v e c t o r s t o r e ( )  
-         c h u n k _ c o u n t   =   v e c t o r s t o r e . _ c o l l e c t i o n . c o u n t ( )  
-         i f   c h u n k _ c o u n t   <   9 0 :     #   E s p e r a m o s   ~ 9 6  
-                 s c o r e   - =   1 5  
-                 i s s u e s . a p p e n d ( f " S o l o   { c h u n k _ c o u n t }   c h u n k s   ( e s p e r a d o s   ~ 9 6 ) " )  
-          
-         #   C h e c k   4 :   T e s t   d e   r e t r i e v a l  
-         t r y :  
-                 r e s u l t s   =   v e c t o r s t o r e . s i m i l a r i t y _ s e a r c h ( " I S O   1 8 7 8 8 " ,   k = 5 )  
-                 i f   n o t   r e s u l t s :  
-                         s c o r e   - =   1 5  
-                         i s s u e s . a p p e n d ( " R e t r i e v a l   f a l l a   e n   q u e r y   d e   p r u e b a " )  
-         e x c e p t :  
-                 s c o r e   - =   1 5  
-                 i s s u e s . a p p e n d ( " E r r o r   e n   r e t r i e v a l " )  
-          
-         r e t u r n   {  
-                 " s c o r e " :   s c o r e ,  
-                 " s t a t u s " :   " � xx�   H E A L T H Y "   i f   s c o r e   > =   9 0   e l s e   " � xx�   W A R N I N G "   i f   s c o r e   > =   7 0   e l s e   " � x �   C R I T I C A L " ,  
-                 " i s s u e s " :   i s s u e s  
-         }  
- ` ` `  
- E j e c u t a r   a n t e s   d e   c a d a   d e p l o y m e n t :  
- ` ` ` b a s h  
- p y t h o n   - c   " f r o m   s c r i p t s . d i a g n o s e _ v e c t o r d b   i m p o r t   h e a l t h _ s c o r e ;   p r i n t ( h e a l t h _ s c o r e ( ) ) "  
- ` ` `  
- S i   s c o r e   <   9 0   �      N o   d e s p l e g a r ,   i n v e s t i g a r   p r i m e r o .  
-  
- # # #   1 3 . 6   R e c o m e n d a c i � � n :   D o c k e r   p a r a   E v i t a r   E s t o  
- P r � � x i m a   v e r s i � � n :   C o n t a i n e r i z a r   t o d o   e n   D o c k e r :  
- ` ` ` d o c k e r f i l e  
- #   D o c k e r f i l e  
- F R O M   p y t h o n : 3 . 1 1 - s l i m  
-  
- W O R K D I R   / a p p  
-  
- #   C o p i a r   r e q u i r e m e n t s  
- C O P Y   r e q u i r e m e n t s . t x t   .  
- R U N   p i p   i n s t a l l   - r   r e q u i r e m e n t s . t x t  
-  
- #   C o p i a r   s o l o   l o   n e c e s a r i o   ( N O   c h r o m a _ d b /   n i   n o r m a l i z e d / )  
- C O P Y   s r c /   . / s r c /  
- C O P Y   s c r i p t s /   . / s c r i p t s /  
- C O P Y   d a t a / c o n t r a c t s /   . / d a t a / c o n t r a c t s /  
-  
- #   A l   i n i c i a r :   n o r m a l i z a r   +   i n d e x a r   d e s d e   c e r o  
- C M D   [ " b a s h " ,   " - c " ,   " p y t h o n   s c r i p t s / n o r m a l i z e _ a l l _ s a f e . p y   & &   p y t h o n   s c r i p t s / i n i t _ v e c t o r s t o r e . p y   & &   s t r e a m l i t   r u n   a p p . p y " ]  
- ` ` `  
-  
- * * B e n e f i c i o : * *   C a d a   d e p l o y   e s   u n   " f r e s h   s t a r t "   g a r a n t i z a d o .  
+
+ 
+ - - - 
+ 
+ 
+ 
+ # #   1 3 .   L E S S O N S   F R O M   P R O D U C T I O N   ( R e a l - W o r l d   D e b u g g i n g ) 
+ 
+ 
+ 
+ # # #   1 3 . 1   C a s o :   C a Ã ­ d a   d e   A c c u r a c y   a l   C a m b i a r   d e   E n t o r n o 
+ 
+ 
+ 
+ * * S Ã ­ n t o m a   o b s e r v a d o   ( F e b r e r o   2 0 2 6 ) : * * 
+ 
+ -   S i s t e m a   c o n   1 0 0 %   a c c u r a c y   e n   P C   A 
+ 
+ -   A l   m i g r a r   a   P C   B   â      a c c u r a c y   c a y Ã ³   a   5 6 . 6 7 % 
+ 
+ -   M i s m o s   P D F s ,   m i s m o   c Ã ³ d i g o 
+ 
+ 
+ 
+ * * C a u s a   r a Ã ­ z   i d e n t i f i c a d a : * * 
+ 
+ ` ` ` 
+ 
+ â � R  P r o b l e m a :   A r c h i v o s   d a t a / n o r m a l i z e d /   n o   s e   c o p i a r o n   c o r r e c t a m e n t e 
+ 
+ â � R  V e c t o r D B   e n   P C   n u e v o   s e   c r e Ã ³   c o n   r e - n o r m a l i z a c i Ã ³ n   p a r c i a l / d e f e c t u o s a 
+ 
+ â S&   S o l u c i Ã ³ n :   R e - n o r m a l i z a c i Ã ³ n   c o m p l e t a   d e s d e   c e r o   +   r e - i n d e x a c i Ã ³ n 
+ 
+ D i a g n Ã ³ s t i c o   r e a l i z a d o : 
+ 
+ 
+ 
+ d i a g n o s e _ v e c t o r d b . p y   â      D e t e c t Ã ³   c h u n k s   f a l t a n t e s 
+ 
+ s e a r c h _ c i f _ i n _ d o c s . p y   â      C o n f i r m Ã ³   d a t o s   p e r d i d o s   e n   . m d 
+ 
+ n o r m a l i z e _ a l l _ s a f e . p y   â      R e - n o r m a l i z Ã ³   c o n   v a l i d a c i Ã ³ n   a u t o m Ã ¡ t i c a 
+ 
+ v e r i f y _ c r i t i c a l _ f i x e s . p y   â      V a l i d Ã ³   r e c u p e r a c i Ã ³ n 
+ 
+ 
+ 
+ T i e m p o   d e   r e c u p e r a c i Ã ³ n :   1 5   m i n u t o s   ( a u t o m a t i z a d o ) 
+ 
+ ` ` ` 
+ 
+ 
+ 
+ # # #   1 3 . 2   P o r   Q u Ã ©   u n   " F r e s h   S t a r t "   F u n c i o n Ã ³   M e j o r 
+ 
+ P r o b l e m a   d e l   e n t o r n o   " s u c i o " : 
+ 
+ ` ` ` p y t h o n 
+ 
+ #   S i t u a c i Ã ³ n   e n   P C   a n t i g u o   t r a s   2   s e m a n a s   d e   d e s a r r o l l o : 
+ 
+ d a t a / n o r m a l i z e d / 
+ 
+ â  Sâ  ¬ â  ¬   C O N _ 2 0 2 4 _ 0 0 1 _ v 1 . m d                     #   P r i m e r a   p r u e b a 
+ 
+ â  Sâ  ¬ â  ¬   C O N _ 2 0 2 4 _ 0 0 1 _ v 2 . m d                     #   S e g u n d a   p r u e b a 
+ 
+ â  Sâ  ¬ â  ¬   C O N _ 2 0 2 4 _ 0 0 1 _ n o r m a l i z e d . m d     #   V e r s i Ã ³ n   " f i n a l " 
+ 
+ â   â  ¬ â  ¬   C O N _ 2 0 2 4 _ 0 0 1 _ t e s t . m d                 #   P r u e b a   d e   r e g e x 
+ 
+ 
+ 
+ c h r o m a _ d b / 
+ 
+ â   â  ¬ â  ¬   [ c h u n k s   m e z c l a d o s   d e   l a s   4   v e r s i o n e s ]     #   C o r r u p c i Ã ³ n 
+ 
+ ` ` ` 
+ 
+ F r e s h   s t a r t   e n   P C   n u e v o : 
+ 
+ ` ` ` p y t h o n 
+ 
+ #   N o r m a l i z a c i Ã ³ n   l i m p i a   d e s d e   c e r o : 
+ 
+ d a t a / n o r m a l i z e d / 
+ 
+ â   â  ¬ â  ¬   C O N _ 2 0 2 4 _ 0 0 1 _ n o r m a l i z e d . m d     #   S o l o   v e r s i Ã ³ n   f i n a l 
+ 
+ 
+ 
+ c h r o m a _ d b / 
+ 
+ â   â  ¬ â  ¬   [ c h u n k s   l i m p i o s   d e   1   s o l a   v e r s i Ã ³ n ]     #   S i n   d u p l i c a d o s 
+ 
+ ` ` ` 
+ 
+ L e c c i Ã ³ n :   A m b i e n t e s   d e   d e s a r r o l l o   a c u m u l a n   " b a s u r a " .   N e c e s i t a s : 
+ 
+ -   S c r i p t s   d e   l i m p i e z a   ( c l e a n _ w o r k s p a c e . p y ) 
+ 
+ -   C o n t e n e d o r e s   ( D o c k e r )   p a r a   a m b i e n t e s   r e p r o d u c i b l e s 
+ 
+ -   C I / C D   q u e   v a l i d e   d e s d e   c e r o   e n   c a d a   c o m m i t 
+ 
+ 
+ 
+ 
+ 
+ # # #   1 3 . 3   C h e c k l i s t   A n t i - C o r r u p c i Ã ³ n 
+ 
+ A n t e s   d e   c u a l q u i e r   r e - i n d e x a c i Ã ³ n : 
+ 
+ ` ` ` b a s h 
+ 
+ #   1 .   L i m p i a r   a r c h i v o s   t e m p o r a l e s 
+ 
+ f i n d   d a t a / n o r m a l i z e d   - n a m e   " * _ v [ 0 - 9 ] * . m d "   - d e l e t e 
+ 
+ f i n d   d a t a / n o r m a l i z e d   - n a m e   " * _ t e s t * . m d "   - d e l e t e 
+ 
+ 
+ 
+ #   2 .   B o r r a r   V e c t o r D B   a n t i g u a 
+ 
+ r m   - r f   c h r o m a _ d b / 
+ 
+ 
+ 
+ #   3 .   V a l i d a r   P D F s   i n t a c t o s 
+ 
+ p y t h o n   s c r i p t s / v a l i d a t e _ p d f s . p y 
+ 
+ 
+ 
+ #   4 .   R e - n o r m a l i z a r   C O M P L E T O 
+ 
+ p y t h o n   s c r i p t s / n o r m a l i z e _ a l l _ s a f e . p y 
+ 
+ 
+ 
+ #   5 .   R e - i n d e x a r   d e s d e   c e r o 
+ 
+ p y t h o n   s c r i p t s / i n i t _ v e c t o r s t o r e . p y 
+ 
+ 
+ 
+ #   6 .   V a l i d a r   G o l d e n   D a t a s e t 
+ 
+ p y t h o n   t e s t s / r u n _ g o l d e n _ v 4 . p y 
+ 
+ ` ` ` 
+ 
+ F r e c u e n c i a   r e c o m e n d a d a :   C a d a   v e z   q u e   c a m b i e s   e l   n o r m a l i z a d o r   o   c h u n k i n g   s t r a t e g y . 
+ 
+ 
+ 
+ # # #   1 3 . 4   A u t o m a t i z a c i Ã ³ n :   S c r i p t   d e   " R e s e t   L i m p i o " 
+ 
+ C r e a   ` s c r i p t s / r e s e t _ c l e a n . s h ` : 
+ 
+ ` ` ` b a s h 
+ 
+ # ! / b i n / b a s h 
+ 
+ #   R e s e t   c o m p l e t o   d e l   s i s t e m a   a   e s t a d o   l i m p i o 
+ 
+ 
+ 
+ e c h o   " ð x§ ¹   L I M P I E Z A   C O M P L E T A   D E L   S I S T E M A " 
+ 
+ e c h o   " = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = " 
+ 
+ 
+ 
+ #   B a c k u p   d e   s e g u r i d a d 
+ 
+ e c h o   " ð x ¦   C r e a n d o   b a c k u p . . . " 
+ 
+ D A T E = $ ( d a t e   + % Y % m % d _ % H % M % S ) 
+ 
+ m k d i r   - p   b a c k u p s / p r e _ r e s e t _ $ D A T E 
+ 
+ c p   - r   d a t a / n o r m a l i z e d   b a c k u p s / p r e _ r e s e t _ $ D A T E / 
+ 
+ c p   - r   c h r o m a _ d b   b a c k u p s / p r e _ r e s e t _ $ D A T E /   2 > / d e v / n u l l   | |   t r u e 
+ 
+ 
+ 
+ #   L i m p i a r   n o r m a l i z e d 
+ 
+ e c h o   " ð x  ï ¸ �     L i m p i a n d o   d a t a / n o r m a l i z e d / . . . " 
+ 
+ r m   - r f   d a t a / n o r m a l i z e d / * . m d 
+ 
+ 
+ 
+ #   L i m p i a r   V e c t o r D B 
+ 
+ e c h o   " ð x  ï ¸ �     L i m p i a n d o   c h r o m a _ d b / . . . " 
+ 
+ r m   - r f   c h r o m a _ d b / 
+ 
+ 
+ 
+ #   R e - n o r m a l i z a r 
+ 
+ e c h o   " ð x    R e - n o r m a l i z a n d o   d e s d e   P D F s   o r i g i n a l e s . . . " 
+ 
+ p y t h o n   s c r i p t s / n o r m a l i z e _ a l l _ s a f e . p y 
+ 
+ 
+ 
+ #   R e - i n d e x a r 
+ 
+ e c h o   " ð x a  R e - i n d e x a n d o   V e c t o r D B . . . " 
+ 
+ p y t h o n   s c r i p t s / i n i t _ v e c t o r s t o r e . p y 
+ 
+ 
+ 
+ #   V a l i d a r 
+ 
+ e c h o   " â S&   V a l i d a n d o   c o n   G o l d e n   D a t a s e t . . . " 
+ 
+ p y t h o n   t e s t s / r u n _ g o l d e n _ v 4 . p y 
+ 
+ 
+ 
+ e c h o   " â S&   R e s e t   c o m p l e t o .   S i s t e m a   e n   e s t a d o   l i m p i o . " 
+ 
+ ` ` ` 
+ 
+ U s o : 
+ 
+ ` ` ` b a s h 
+ 
+ c h m o d   + x   s c r i p t s / r e s e t _ c l e a n . s h 
+ 
+ . / s c r i p t s / r e s e t _ c l e a n . s h 
+ 
+ ` ` ` 
+ 
+ 
+ 
+ # # #   1 3 . 5   M Ã © t r i c a s   d e   " S a l u d   d e l   S i s t e m a " 
+ 
+ A Ã ± a d e   a   ` s c r i p t s / d i a g n o s e _ v e c t o r d b . p y ` : 
+ 
+ ` ` ` p y t h o n 
+ 
+ d e f   h e a l t h _ s c o r e ( ) : 
+ 
+         " " " 
+ 
+         C a l c u l a   u n   s c o r e   d e   s a l u d   d e l   s i s t e m a   ( 0 - 1 0 0 ) 
+ 
+         " " " 
+ 
+         s c o r e   =   1 0 0 
+ 
+         i s s u e s   =   [ ] 
+ 
+         
+ 
+         #   C h e c k   1 :   V e c t o r D B   e x i s t e 
+ 
+         i f   n o t   o s . p a t h . e x i s t s ( ' c h r o m a _ d b ' ) : 
+ 
+                 s c o r e   - =   5 0 
+ 
+                 i s s u e s . a p p e n d ( " V e c t o r D B   n o   e x i s t e " ) 
+ 
+         
+ 
+         #   C h e c k   2 :   N Ã º m e r o   e s p e r a d o   d e   a r c h i v o s 
+ 
+         n o r m a l i z e d _ c o u n t   =   l e n ( [ f   f o r   f   i n   o s . l i s t d i r ( ' d a t a / n o r m a l i z e d ' )   i f   f . e n d s w i t h ( ' . m d ' ) ] ) 
+ 
+         i f   n o r m a l i z e d _ c o u n t   <   2 0 : 
+ 
+                 s c o r e   - =   2 0 
+ 
+                 i s s u e s . a p p e n d ( f " S o l o   { n o r m a l i z e d _ c o u n t } / 2 0   a r c h i v o s   n o r m a l i z a d o s " ) 
+ 
+         
+ 
+         #   C h e c k   3 :   C h u n k s   t o t a l e s   e s p e r a d o s 
+ 
+         v e c t o r s t o r e   =   g e t _ v e c t o r s t o r e ( ) 
+ 
+         c h u n k _ c o u n t   =   v e c t o r s t o r e . _ c o l l e c t i o n . c o u n t ( ) 
+ 
+         i f   c h u n k _ c o u n t   <   9 0 :     #   E s p e r a m o s   ~ 9 6 
+ 
+                 s c o r e   - =   1 5 
+ 
+                 i s s u e s . a p p e n d ( f " S o l o   { c h u n k _ c o u n t }   c h u n k s   ( e s p e r a d o s   ~ 9 6 ) " ) 
+ 
+         
+ 
+         #   C h e c k   4 :   T e s t   d e   r e t r i e v a l 
+ 
+         t r y : 
+ 
+                 r e s u l t s   =   v e c t o r s t o r e . s i m i l a r i t y _ s e a r c h ( " I S O   1 8 7 8 8 " ,   k = 5 ) 
+ 
+                 i f   n o t   r e s u l t s : 
+ 
+                         s c o r e   - =   1 5 
+ 
+                         i s s u e s . a p p e n d ( " R e t r i e v a l   f a l l a   e n   q u e r y   d e   p r u e b a " ) 
+ 
+         e x c e p t : 
+ 
+                 s c o r e   - =   1 5 
+ 
+                 i s s u e s . a p p e n d ( " E r r o r   e n   r e t r i e v a l " ) 
+ 
+         
+ 
+         r e t u r n   { 
+ 
+                 " s c o r e " :   s c o r e , 
+ 
+                 " s t a t u s " :   " ð xx¢   H E A L T H Y "   i f   s c o r e   > =   9 0   e l s e   " ð xx¡   W A R N I N G "   i f   s c o r e   > =   7 0   e l s e   " ð x ´   C R I T I C A L " , 
+ 
+                 " i s s u e s " :   i s s u e s 
+ 
+         } 
+ 
+ ` ` ` 
+ 
+ E j e c u t a r   a n t e s   d e   c a d a   d e p l o y m e n t : 
+ 
+ ` ` ` b a s h 
+ 
+ p y t h o n   - c   " f r o m   s c r i p t s . d i a g n o s e _ v e c t o r d b   i m p o r t   h e a l t h _ s c o r e ;   p r i n t ( h e a l t h _ s c o r e ( ) ) " 
+ 
+ ` ` ` 
+ 
+ S i   s c o r e   <   9 0   â      N o   d e s p l e g a r ,   i n v e s t i g a r   p r i m e r o . 
+ 
+ 
+ 
+ # # #   1 3 . 6   R e c o m e n d a c i Ã ³ n :   D o c k e r   p a r a   E v i t a r   E s t o 
+ 
+ P r Ã ³ x i m a   v e r s i Ã ³ n :   C o n t a i n e r i z a r   t o d o   e n   D o c k e r : 
+ 
+ ` ` ` d o c k e r f i l e 
+ 
+ #   D o c k e r f i l e 
+ 
+ F R O M   p y t h o n : 3 . 1 1 - s l i m 
+ 
+ 
+ 
+ W O R K D I R   / a p p 
+ 
+ 
+ 
+ #   C o p i a r   r e q u i r e m e n t s 
+ 
+ C O P Y   r e q u i r e m e n t s . t x t   . 
+ 
+ R U N   p i p   i n s t a l l   - r   r e q u i r e m e n t s . t x t 
+ 
+ 
+ 
+ #   C o p i a r   s o l o   l o   n e c e s a r i o   ( N O   c h r o m a _ d b /   n i   n o r m a l i z e d / ) 
+ 
+ C O P Y   s r c /   . / s r c / 
+ 
+ C O P Y   s c r i p t s /   . / s c r i p t s / 
+ 
+ C O P Y   d a t a / c o n t r a c t s /   . / d a t a / c o n t r a c t s / 
+ 
+ 
+ 
+ #   A l   i n i c i a r :   n o r m a l i z a r   +   i n d e x a r   d e s d e   c e r o 
+ 
+ C M D   [ " b a s h " ,   " - c " ,   " p y t h o n   s c r i p t s / n o r m a l i z e _ a l l _ s a f e . p y   & &   p y t h o n   s c r i p t s / i n i t _ v e c t o r s t o r e . p y   & &   s t r e a m l i t   r u n   a p p . p y " ] 
+ 
+ ` ` ` 
+ 
+ 
+ 
+ * * B e n e f i c i o : * *   C a d a   d e p l o y   e s   u n   " f r e s h   s t a r t "   g a r a n t i z a d o . 
+ 
  
