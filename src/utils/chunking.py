@@ -1,35 +1,63 @@
 # -*- coding: utf-8 -*-
 """
-Sistema de chunking para PDFs de contratos.
-Divide documentos en chunks con metadata enriquecida.
+Chunking de documentos PDF/Markdown con contexto inteligente.
+Usa RecursiveCharacterTextSplitter de LangChain para chunks semánticos.
 """
 
 import re
 import logging
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict
 
-import sys
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from src.config import SECTION_DELIMITER, CHUNK_MAX_TOKENS, CHUNK_OVERLAP, NORMALIZED_PATH
-from src.utils.pdf_processor import read_pdf_with_pages
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
+from src.utils.pdf_processor import load_pdf_documents
 
 logger = logging.getLogger(__name__)
 
-# Import metadata enrichment
-from src.utils.metadata_enrichment import enrich_chunk_metadata
+# Configuración del Text Splitter
+from src.config import CHUNK_MAX_TOKENS, CHUNK_OVERLAP
 
+
+def load_markdown_document(md_path: Path) -> List[Document]:
+    """
+    Carga un archivo Markdown normalizado como Document de LangChain.
+    
+    Args:
+        md_path: Ruta al archivo .md
+    
+    Returns:
+        Lista con un solo Document (Markdown no tiene páginas)
+    """
+    try:
+        with open(md_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Crear Document único con todo el contenido
+        doc = Document(
+            page_content=content,
+            metadata={"source": md_path.name, "page": 1}
+        )
+        
+        logger.info(f"✅ Markdown cargado: {md_path.name} ({len(content)} chars)")
+        return [doc]
+        
+    except Exception as e:
+        logger.error(f"Error cargando markdown {md_path.name}: {e}")
+        return []
+
+
+# Definir splitter global eficiente
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1200,  # ~300-400 tokens
+    chunk_overlap=200,
+    separators=["\n\n", "\n", ". ", " ", ""],
+    length_function=len,
+)
 
 def extract_metadata_from_text(text: str, filename: str) -> Dict:
     """
     Extrae metadata del contenido del PDF usando regex.
-    
-    Args:
-        text: Texto completo del PDF.
-        filename: Nombre del archivo PDF.
-    
-    Returns:
-        Dict: Metadata extraída del contrato.
     """
     metadata = {
         "archivo": filename,
@@ -43,12 +71,12 @@ def extract_metadata_from_text(text: str, filename: str) -> Dict:
         "aval_vencimiento": None,
         "aval_importe": None,
         "aval_entidad": None,
-        "requiere_confidencialidad": None,
-        "nivel_seguridad": None,
-        "normas": None  # STANAG, ISO, etc.
+        "requiere_confidencialidad": False,
+        "nivel_seguridad": "SIN CLASIFICAR",
+        "normas": None
     }
     
-    # Extraer número de expediente
+    # 1. NÚMERO DE EXPEDIENTE / CONTRATO
     exp_patterns = [
         r"EXPEDIENTE:\s*([A-Z0-9_\-]+)",
         r"Expediente:\s*([A-Z0-9_\-]+)",
@@ -58,419 +86,148 @@ def extract_metadata_from_text(text: str, filename: str) -> Dict:
     for pattern in exp_patterns:
         match = re.search(pattern, text)
         if match:
-            metadata["num_contrato"] = match.group(1)
+            metadata["num_contrato"] = match.group(1).strip()
             break
-    
-    # Extraer tipo de contrato del filename o texto
-    tipo_patterns = [
-        r"TIPO:\s*(.+?)(?:\n|$)",
-        r"CONTRATO DE\s+(\w+)",
-        r"Tipo de Contrato:\s*(.+?)(?:\n|$)"
-    ]
-    for pattern in tipo_patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            metadata["tipo_contrato"] = match.group(1).strip()
-            break
-    
-    # Intentar extraer del nombre del archivo
-    if not metadata["tipo_contrato"]:
-        filename_parts = filename.replace(".pdf", "").split("_")
-        if len(filename_parts) >= 4:
-            metadata["tipo_contrato"] = " ".join(filename_parts[3:])
-    
-    # Extraer contratante
-    contratante_patterns = [
-        r"Contratante:\s*(.+?)(?:\n|$)",
-        r"CONTRATANTE:\s*(.+?)(?:\n|$)",
-        r"Órgano de Contratación:\s*(.+?)(?:\n|$)"
-    ]
-    for pattern in contratante_patterns:
-        match = re.search(pattern, text)
-        if match:
-            metadata["contratante"] = match.group(1).strip()
-            break
-    
-    # Extraer contratista
-    contratista_patterns = [
-        r"Contratista:\s*(.+?)(?:\n|$)",
-        r"CONTRATISTA:\s*(.+?)(?:\n|$)",
-        r"Adjudicatario:\s*(.+?)(?:\n|$)"
-    ]
-    for pattern in contratista_patterns:
-        match = re.search(pattern, text)
-        if match:
-            metadata["contratista"] = match.group(1).strip()
-            break
-    
-    # Extraer fechas
-    fecha_inicio_patterns = [
-        r"Fecha de inicio de ejecucion:\s*(\d{1,2}/\d{1,2}/\d{4})",
-        r"Fecha de inicio:\s*(\d{1,2}/\d{1,2}/\d{4})",
-        r"Inicio:\s*(\d{1,2}/\d{1,2}/\d{4})",
-        r"Fecha inicio:\s*(\d{1,2}/\d{1,2}/\d{4})"
-    ]
-    for pattern in fecha_inicio_patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            metadata["fecha_inicio"] = match.group(1)
-            print(f"[DEBUG] Fecha inicio encontrada: {match.group(1)}")
-            break
-    
-    fecha_fin_patterns = [
-        r"Fecha de finalizacion:\s*(\d{1,2}/\d{1,2}/\d{4})",
-        r"Fecha de finalización:\s*(\d{1,2}/\d{1,2}/\d{4})",
-        r"Fin:\s*(\d{1,2}/\d{1,2}/\d{4})",
-        r"Fecha fin:\s*(\d{1,2}/\d{1,2}/\d{4})",
-        r"Vencimiento:\s*(\d{1,2}/\d{1,2}/\d{4})",
-        r"Vigencia hasta el:\s*(\d{1,2}/\d{1,2}/\d{4})",
-        r"Finaliza el:\s*(\d{1,2}/\d{1,2}/\d{4})"
-    ]
-    for pattern in fecha_fin_patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            found_date = match.group(1)
-            metadata["fecha_fin"] = found_date
-            print(f"[DEBUG] Fecha fin encontrada: {found_date}")
-            break
-    
-    # Extraer importe
+            
+    # Fallback al nombre del archivo si falla regex
+    if not metadata["num_contrato"]:
+         # Ejemplo: CON_2024_001_Suministro.pdf -> CON_2024_001
+         parts = filename.split('_')
+         if len(parts) >= 3 and parts[0] in ["CON", "SER", "SUM", "LIC"]:
+             metadata["num_contrato"] = f"{parts[0]}_{parts[1]}_{parts[2]}"
+
+    # 2. IMPORTE (Búsqueda robusta)
     importe_patterns = [
         r"Importe total:\s*([\d\.,]+)\s*(?:€|EUR)",
-        r"Importe:\s*([\d\.,]+)\s*(?:€|EUR)",
-        r"Precio:\s*([\d\.,]+)\s*(?:€|EUR)",
-        r"([\d\.]+,\d{2})\s*(?:€|EUR)"
+        r"Importe de adjudicación:\s*([\d\.,]+)\s*(?:€|EUR)",
+        r"Valor estimado:\s*([\d\.,]+)\s*(?:€|EUR)",
+        r"Precio:\s*([\d\.,]+)\s*(?:€|EUR)"
     ]
     for pattern in importe_patterns:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            metadata["importe"] = match.group(1) + "€"
-            print(f"[DEBUG] Importe encontrado: {metadata['importe']}")
-            break
-            break
-    
-    # Extraer fecha de vencimiento del aval
-    aval_fecha_patterns = [
-        r"Fecha de vencimiento del aval:\s*(\d{1,2}/\d{1,2}/\d{4})",
-        r"Vencimiento del aval:\s*(\d{1,2}/\d{1,2}/\d{4})",
-        r"Aval.*vencimiento:\s*(\d{1,2}/\d{1,2}/\d{4})",
+            val = match.group(1).replace(" ", "")
+            # Validar que parece un número
+            if any(c.isdigit() for c in val):
+                metadata["importe"] = val + " EUR"
+                break
+
+    # 3. FECHAS CLAVE
+    date_pattern = r"\b(\d{1,2}/\d{1,2}/\d{4})\b"
+    dates = re.findall(date_pattern, text)
+    if dates:
+        # Heurística simple: Primera fecha suele ser firma/inicio, última vencimiento (muy falible pero útil)
+        # Mejor buscar contexto
+        pass # Se hará mejor en el chunking individual o con regex específico
+        
+    # Regex específicos para fechas
+    fin_patterns = [
+        r"Fecha de finalización:\s*(\d{1,2}/\d{1,2}/\d{4})",
+        r"Vigencia hasta el:\s*(\d{1,2}/\d{1,2}/\d{4})",
+        r"Plazo de ejecución:.*hasta el (\d{1,2}/\d{1,2}/\d{4})"
     ]
-    for pattern in aval_fecha_patterns:
+    for pattern in fin_patterns:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            metadata["aval_vencimiento"] = match.group(1)
-            print(f"[DEBUG] Aval vencimiento encontrado: {match.group(1)}")
+            metadata["fecha_fin"] = match.group(1)
             break
-    
-    # Extraer importe del aval/garantía
-    aval_importe_patterns = [
-        r"Garantia definitiva:\s*([\d\.,]+)\s*EUR",
-        r"Garantía definitiva:\s*([\d\.,]+)\s*EUR",
-        r"Importe del aval:\s*([\d\.,]+)",
-    ]
-    for pattern in aval_importe_patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            metadata["aval_importe"] = match.group(1) + "€"
-            break
-    
-    # Extraer entidad avalista (patrones expandidos para capturar variaciones)
+
+    # 4. AVALES
     aval_entidad_patterns = [
         r"Entidad avalista:\s*(.+?)(?:\n|$)",
-        r"Entidad avalista\s*:\s*(.+?)(?:\n|$)",  # Espacio antes de :
-        r"Banco avalista:\s*(.+?)(?:\n|$)",
-        r"Avalista:\s*(.+?)(?:\n|$)",
-        r"Emitido por:\s*(.+?)(?:\n|$)",
-        r"Entidad\s+avalista\s*:\s*(.+?)(?:\n|$)",  # Espacios flexibles
+        r"Avalado por:\s*(.+?)(?:\n|$)",
+        r"Banco:\s*(.+?)(?:\n|$)"
     ]
     for pattern in aval_entidad_patterns:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            metadata["aval_entidad"] = match.group(1).strip()
-            print(f"[DEBUG] Entidad avalista encontrada: {metadata['aval_entidad']}")
-            break
-    
-    # Extraer nivel de seguridad/confidencialidad
-    seguridad_patterns = [
-        r"Clasificacion de seguridad:\s*(.+?)(?:\n|$)",
-        r"Clasificación de seguridad:\s*(.+?)(?:\n|$)",
-        r"Nivel de seguridad:\s*(.+?)(?:\n|$)",
-    ]
-    for pattern in seguridad_patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            nivel = match.group(1).strip()
-            metadata["nivel_seguridad"] = nivel
-            # Si tiene clasificación diferente a "SIN CLASIFICAR", requiere confidencialidad
-            if nivel and "SIN CLASIFICAR" not in nivel.upper():
-                metadata["requiere_confidencialidad"] = True
-            else:
-                metadata["requiere_confidencialidad"] = False
-            break
-    
-    # Extraer NORMAS Y CERTIFICACIONES (STANAG, ISO, etc.)
-    normas_encontradas = []
+            entidad = match.group(1).strip()
+            # Limpieza básica
+            if len(entidad) < 50: 
+                metadata["aval_entidad"] = entidad
+                break
+                
+    # 5. NORMATIVA (STANAG, ISO)
     normas_patterns = [
-        r"STANAG\s*\d+",
-        r"ISO\s*\d+[:\-]?\d*",
-        r"PECAL\s*\d+",
-        r"AQAP[\-\s]*\d+",
-        r"MIL-STD-\d+[A-Z]?",
-        r"UNE-EN\s*\d+",
-        r"NIJ\s+Standard[\s\d\.]+",
-        r"ENS\s+Alto",
-        r"NIST\s+CSF",
-        r"CCN-STIC"
+        r"(STANAG\s*\d+)",
+        r"(ISO\s*\d+[:\-]?\d*)",
+        r"(MIL-STD-\d+[A-Z]?)",
+        r"(PECAL\s*\d+)",
+        r"(UNE-EN\s*\d+)"
     ]
+    found_normas = []
     for pattern in normas_patterns:
         matches = re.findall(pattern, text, re.IGNORECASE)
-        normas_encontradas.extend(matches)
+        found_normas.extend(matches)
     
-    if normas_encontradas:
-        # Eliminar duplicados y formatear
-        normas_unicas = list(set([n.upper().strip() for n in normas_encontradas]))
-        metadata["normas"] = ", ".join(normas_unicas)
-    
+    if found_normas:
+        metadata["normas"] = ", ".join(sorted(list(set(n.upper() for n in found_normas))))
+
     return metadata
 
 
-def split_by_sections(text: str) -> List[Dict]:
+def create_chunks_from_pdf(file_path: Path) -> List[Dict]:
     """
-    Divide el texto por secciones usando el delimitador especificado.
+    Crea chunks desde un archivo PDF o Markdown normalizado.
+    Detecta automáticamente el formato por la extensión.
     
     Args:
-        text: Texto completo del PDF.
+        file_path: Ruta al archivo (.pdf o .md)
     
     Returns:
-        List[Dict]: Lista de secciones con nombre y contenido.
+        Lista de chunks con 'contenido' y 'metadata'
     """
-    sections = []
-    
-    # Patrón para detectar secciones: ─── NOMBRE ───
-    section_pattern = rf"{SECTION_DELIMITER}\s*(.+?)\s*{SECTION_DELIMITER}"
-    
-    # Encontrar todas las secciones
-    matches = list(re.finditer(section_pattern, text))
-    
-    if not matches:
-        # Si no hay secciones, tratar todo como una sección
-        sections.append({
-            "nombre": "Documento Completo",
-            "contenido": text.strip()
-        })
-        return sections
-    
-    # Extraer contenido antes de la primera sección
-    if matches[0].start() > 0:
-        pre_content = text[:matches[0].start()].strip()
-        if pre_content:
-            sections.append({
-                "nombre": "Encabezado",
-                "contenido": pre_content
-            })
-    
-    # Extraer cada sección
-    for i, match in enumerate(matches):
-        section_name = match.group(1).strip()
-        
-        # Contenido va desde el fin del match hasta el inicio del siguiente
-        start = match.end()
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-        
-        content = text[start:end].strip()
-        
-        if content:
-            sections.append({
-                "nombre": section_name,
-                "contenido": content
-            })
-    
-    return sections
-
-
-def estimate_tokens(text: str) -> int:
-    """
-    Estima el número de tokens en un texto.
-    Aproximación: 1 token ≈ 4 caracteres en español.
-    
-    Args:
-        text: Texto a estimar.
-    
-    Returns:
-        int: Número estimado de tokens.
-    """
-    return len(text) // 4
-
-
-def subdivide_large_section(section: Dict, max_tokens: int = CHUNK_MAX_TOKENS, 
-                            overlap: int = CHUNK_OVERLAP) -> List[Dict]:
-    """
-    Subdivide una sección grande en chunks más pequeños con overlap.
-    
-    Args:
-        section: Diccionario con nombre y contenido de la sección.
-        max_tokens: Máximo de tokens por chunk.
-        overlap: Tokens de overlap entre chunks.
-    
-    Returns:
-        List[Dict]: Lista de sub-chunks.
-    """
-    content = section["contenido"]
-    tokens = estimate_tokens(content)
-    
-    if tokens <= max_tokens:
-        return [section]
-    
-    chunks = []
-    max_chars = max_tokens * 4  # Aproximación
-    overlap_chars = overlap * 4
-    
-    start = 0
-    chunk_num = 1
-    
-    while start < len(content):
-        end = start + max_chars
-        
-        # Intentar cortar en un punto y seguido o salto de línea
-        if end < len(content):
-            # Buscar el último punto o salto de línea antes del límite
-            last_break = content.rfind(".", start, end)
-            if last_break == -1:
-                last_break = content.rfind("\n", start, end)
-            if last_break > start:
-                end = last_break + 1
-        
-        chunk_content = content[start:end].strip()
-        
-        if chunk_content:
-            chunks.append({
-                "nombre": f"{section['nombre']} (Parte {chunk_num})",
-                "contenido": chunk_content
-            })
-            chunk_num += 1
-        
-        start = end - overlap_chars
-        if start < 0:
-            start = 0
-    
-    return chunks
-
-
-def create_chunks_from_pdf(pdf_path: Path) -> List[Dict]:
-    """
-    Crea chunks enriquecidos con metadata a partir de un PDF.
-    
-    Args:
-        pdf_path: Ruta al archivo PDF.
-    
-    Returns:
-        List[Dict]: Lista de chunks con contenido y metadata completa.
-    """
-    chunks = []
-    
-    # Leer PDF con información de páginas
-    pages_data = read_pdf_with_pages(pdf_path)
-    
-    if not pages_data:
-        logger.warning(f"No se pudo leer el PDF: {pdf_path.name}")
+    # Detectar tipo de archivo
+    if file_path.suffix.lower() == '.md':
+        raw_docs = load_markdown_document(file_path)
+    elif file_path.suffix.lower() == '.pdf':
+        raw_docs = load_pdf_documents(file_path)
+    else:
+        logger.error(f"❌ Formato no soportado: {file_path.suffix}")
         return []
     
-    # Combinar texto de todas las páginas
-    full_text = "\n\n".join([p["text"] for p in pages_data])
-    
-    # Extraer metadata global del documento
-    global_metadata = extract_metadata_from_text(full_text, pdf_path.name)
-    
-    # Dividir por secciones
-    sections = split_by_sections(full_text)
-    
-    # Procesar cada sección
-    for section in sections:
-        # Subdividir si es muy grande
-        sub_sections = subdivide_large_section(section)
-        
-        for sub in sub_sections:
-            # Determinar la página aproximada
-            page_num = 1
-            for page in pages_data:
-                if sub["contenido"][:100] in page["text"]:
-                    page_num = page["page_num"]
-                    break
-            
-            chunk = {
-                "contenido": sub["contenido"],
-                "metadata": {
-                    **global_metadata,
-                    "seccion_pdf": sub["nombre"],
-                    "pagina": page_num
-                }
-            }
-            chunks.append(chunk)
-    
-    logger.info(f"Creados {len(chunks)} chunks de: {pdf_path.name}")
-    return chunks
-
-
-def create_chunks_from_normalized(md_path: Path) -> List[Dict]:
-    """
-    Crea chunks a partir de un archivo Markdown normalizado.
-    Con metadata enriquecida automáticamente.
-    """
-    with open(md_path, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    # Dividir por secciones usando el delimitador
-    sections = split_by_sections(content)
-    
-    # El normalizador ya pone la metadata al inicio, podemos extraerla si queremos, 
-    # pero para el RAG aprovecharemos que cada sección es clara.
-    # Por ahora, usamos el filename para identificar el contrato original.
-    original_filename = md_path.name.replace("_normalized.md", ".pdf")
-
-    # Extraer metadata GLOBAL del contenido completo del markdown (igual que en PDF)
-    # Esto asegura que num_contrato, fechas, etc. estén disponibles en todos los chunks
-    global_metadata = extract_metadata_from_text(content, original_filename)
-    
-    chunks = []
-    for section in sections:
-        sub_sections = subdivide_large_section(section)
-        for sub in sub_sections:
-            # Metadata base combinada con global
-            base_metadata = {
-                **global_metadata,  # Incluir num_contrato, contratista, etc.
-                "archivo": original_filename,
-                "seccion": sub["nombre"]
-            }
-            
-            # ENRIQUECIMIENTO AUTOMÁTICO
-            enriched_metadata = enrich_chunk_metadata(
-                chunk_text=sub["contenido"],
-                section_name=sub["nombre"],
-                base_metadata=base_metadata
-            )
-            
-            chunks.append({
-                "contenido": sub["contenido"],
-                "metadata": enriched_metadata
-            })
-    
-    logger.info(f"Creados {len(chunks)} chunks enriquecidos de: {md_path.name}")
-    return chunks
-
-def create_all_chunks() -> List[Dict]:
-    """
-    Crea chunks de todos los archivos NORMALIZADOS.
-    """
-    all_chunks = []
-    md_files = list(NORMALIZED_PATH.glob("*.md"))
-    
-    if not md_files:
-        logger.warning(f"No hay archivos normalizados en {NORMALIZED_PATH}")
+    if not raw_docs:
+        logger.warning(f"⚠️ No se pudieron cargar documentos de {file_path.name}")
         return []
-
-    for md_path in md_files:
-        chunks = create_chunks_from_normalized(md_path)
-        all_chunks.extend(chunks)
     
-    logger.info(f"Total: {len(all_chunks)} chunks de {len(md_files)} documentos normalizados")
-    return all_chunks
+    # Extraer Texto Completo para Metadata Global
+    full_text = "\n".join([d.page_content for d in raw_docs])
+    global_meta = extract_metadata_from_text(full_text, file_path.name)
+    
+    processed_chunks = []
+    
+    # Procesar iterativamente con contexto de página/sección
+    for doc in raw_docs:
+        # Detectar si es un ANEXO por el contenido
+        is_anexo = False
+        section_label = "Cuerpo_Principal"
+        
+        header_text = doc.page_content[:200].upper()
+        if "ANEXO" in header_text or "APÉNDICE" in header_text:
+            is_anexo = True
+            section_label = "Anexo"
+            # Intentar extraer "Anexo I", "Anexo A"
+            match = re.search(r"(ANEXO\s+[A-Z0-9]+)", header_text)
+            if match:
+                section_label = match.group(1)
+        
+        # Split de la página/documento
+        chunks = text_splitter.split_text(doc.page_content)
+        
+        for i, chunk_text in enumerate(chunks):
+            # Construir metadatos finales
+            chunk_meta = global_meta.copy()
+            chunk_meta.update({
+                "source": file_path.name,
+                "pagina": doc.metadata.get("page", 1),
+                "seccion": section_label,
+                "chunk_index": i
+            })
+            
+            processed_chunks.append({
+                "contenido": chunk_text,
+                "metadata": chunk_meta
+            })
+            
+    logger.info(f"Procesado {file_path.name}: {len(processed_chunks)} chunks.")
+    return processed_chunks

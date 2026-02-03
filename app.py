@@ -76,10 +76,11 @@ if 'alerts_loaded' not in st.session_state:
     # Cargar alertas automáticamente al iniciar
     st.session_state['alerts_loaded'] = True
     try:
-        result = run_quick_analysis()
-        if result.get("success"):
-            st.session_state['alerts_summary'] = result.get("alerts_summary", {})
-            # NO guardamos el informe aquí para que el dashboard muestre el mensaje de bienvenida
+        with st.spinner("🚀 Iniciando protocolos de defensa y analizando contratos... (Esto puede tardar unos segundos)"):
+            result = run_quick_analysis()
+            if result.get("success"):
+                st.session_state['alerts_summary'] = result.get("alerts_summary", {})
+                # NO guardamos el informe aquí para que el dashboard muestre el mensaje de bienvenida
     except Exception:
         pass  # Si falla, simplemente no hay alertas
 

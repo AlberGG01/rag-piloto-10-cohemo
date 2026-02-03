@@ -1,0 +1,152 @@
+[
+    {
+        "id": "NUM_01",
+        "pregunta": "¿Cuál es el importe total exacto (con céntimos) del contrato CON_2024_012 (Centro de Mando Retamares)?",
+        "respuesta_correcta": "28.500.000,00 EUR"
+    },
+    {
+        "id": "NUM_02",
+        "pregunta": "Identifica la entidad bancaria que emitió el aval para el contrato SER_2024_015.",
+        "respuesta_correcta": "ING Bank"
+    },
+    {
+        "id": "NUM_03",
+        "pregunta": "Facilita el importe exacto de la garantía definitiva del contrato CON_2024_016.",
+        "respuesta_correcta": "84.000,00 EUR"
+    },
+    {
+        "id": "NUM_04",
+        "pregunta": "¿Qué normativa MIL específica regula el combustible en el contrato SUM_2024_011?",
+        "respuesta_correcta": "MIL-DTL-83133"
+    },
+    {
+        "id": "NUM_05",
+        "pregunta": "Lista los códigos STANAG mencionados en el contrato de Munición de Instrucción (CON_2024_005).",
+        "respuesta_correcta": "STANAG 4172, STANAG 4090"
+    },
+    {
+        "id": "NUM_06",
+        "pregunta": "¿Qué norma ISO específica se exige en el contrato de Vigilancia (CON_2024_010)?",
+        "respuesta_correcta": "ISO 18788"
+    },
+    {
+        "id": "NUM_07",
+        "pregunta": "¿Cuál es el importe total de adjudicación del contrato LIC_2024_017?",
+        "respuesta_correcta": "9.600.000,00 EUR"
+    },
+    {
+        "id": "NUM_08",
+        "pregunta": "Proporciona el CIF de la empresa adjudicataria del contrato de Ciberseguridad (CON_2024_004).",
+        "respuesta_correcta": "B-55667788"
+    },
+    {
+        "id": "NUM_09",
+        "pregunta": "¿A cuánto asciende la garantía definitiva del contrato de Transporte Estratégico (SER_2024_008)?",
+        "respuesta_correcta": "112.000,00 EUR"
+    },
+    {
+        "id": "NUM_10",
+        "pregunta": "¿Qué dos normativas de calidad y ergonomía aplican al contrato SUM_2024_014?",
+        "respuesta_correcta": "ISO 13485, MIL-STD-1472"
+    },
+    {
+        "id": "INF_01",
+        "pregunta": "¿Qué contratos incluyen cláusulas de penalización por retraso de 50.000 EUR diarios?",
+        "respuesta_correcta": "SER_2024_015, SUM_2024_011"
+    },
+    {
+        "id": "INF_02",
+        "pregunta": "Compara el importe total del contrato de Ciberseguridad con el de Visión Nocturna. ¿Cuál es mayor y por cuánto?",
+        "respuesta_correcta": "Ciberseguridad (4.5M) > Visión Nocturna (4.2M). Diferencia: 300.000 EUR."
+    },
+    {
+        "id": "INF_03",
+        "pregunta": "¿Qué contrato de armamento requiere interfaces de raíles Picatinny (STANAG 4694/MIL-STD-1913)?",
+        "respuesta_correcta": "CON_2024_020 (Fusiles HK416)"
+    },
+    {
+        "id": "INF_04",
+        "pregunta": "¿Cuál es la fecha final de ejecución material programada para el contrato de Retamares (CON_2024_012)?",
+        "respuesta_correcta": "12/10/2027"
+    },
+    {
+        "id": "INF_05",
+        "pregunta": "¿Qué normativa de seguridad alimentaria aplica al suministro de raciones de combate?",
+        "respuesta_correcta": "ISO 22000"
+    },
+    {
+        "id": "INF_06",
+        "pregunta": "Verifica si la garantía del contrato SER_2024_008 corresponde exactamente al 2% del importe total.",
+        "respuesta_correcta": "Sí (112.000 es el 2% de 5.600.000)"
+    },
+    {
+        "id": "INF_07",
+        "pregunta": "Identifica el contrato de comunicaciones que requiere el estándar STANAG 4538.",
+        "respuesta_correcta": "CON_2024_009"
+    },
+    {
+        "id": "INF_08",
+        "pregunta": "Calcula la diferencia de importe entre el Mantenimiento C295 y los Hangares de Morón.",
+        "respuesta_correcta": "2.400.000,00 EUR (18.2M - 15.8M)"
+    },
+    {
+        "id": "INF_09",
+        "pregunta": "¿Qué contrato sanitario incluye requisitos de ergonomía militar (MIL-STD-1472)?",
+        "respuesta_correcta": "SUM_2024_014"
+    },
+    {
+        "id": "INF_10",
+        "pregunta": "Suma los importes totales de los contratos de Combustible Aviación y Mantenimiento C295.",
+        "respuesta_correcta": "25.000.000,00 EUR (6.8M + 18.2M)"
+    },
+    {
+        "id": "EDGE_01",
+        "pregunta": "Lista los contratos que citan la norma ISO 9001 de forma genérica (sin especificar año).",
+        "respuesta_correcta": "LIC_2024_003, CON_2024_001, CON_2024_002"
+    },
+    {
+        "id": "EDGE_02",
+        "pregunta": "¿Quién figura como responsable técnico del contrato de suministro de Drones Predator?",
+        "respuesta_correcta": "No consta / Información inexistente en la base documental."
+    },
+    {
+        "id": "EDGE_03",
+        "pregunta": "¿Existe algún contrato cuyo aval haya sido emitido explícitamente por ING Bank? Indica cuál.",
+        "respuesta_correcta": "Sí, SER_2024_015."
+    },
+    {
+        "id": "EDGE_04",
+        "pregunta": "¿Cuál es el contrato que contiene mayor densidad de hitos temporales identificados (cerca de 10 fechas)?",
+        "respuesta_correcta": "CON_2024_007 (Zaragoza) o CON_2024_009 (Comunicaciones)"
+    },
+    {
+        "id": "EDGE_05",
+        "pregunta": "Identifica los contratos con una penalización exacta de 10.000 EUR (ni más ni menos).",
+        "respuesta_correcta": "SER_2024_008, SER_2024_019"
+    },
+    {
+        "id": "EDGE_06",
+        "pregunta": "¿Qué contrato prohíbe explícitamente la subcontratación de actividades 'por razones de seguridad'?",
+        "respuesta_correcta": "CON_2024_004"
+    },
+    {
+        "id": "EDGE_07",
+        "pregunta": "¿Qué contratos comparten un hito de ejecución fijado para el 16/12/2024?",
+        "respuesta_correcta": "CON_2024_004, CON_2024_007, SER_2024_008, SER_2024_019"
+    },
+    {
+        "id": "EDGE_08",
+        "pregunta": "¿Qué contrato de suministros combina normativas ISO (civiles) y STANAG (militares) simultáneamente?",
+        "respuesta_correcta": "SUM_2024_006 (ISO 22000 + STANAG 2937)"
+    },
+    {
+        "id": "EDGE_09",
+        "pregunta": "Identifica el contrato de menor cuantía económica de toda la base de datos.",
+        "respuesta_correcta": "SUM_2024_014 (425.000,00 EUR)"
+    },
+    {
+        "id": "EDGE_10",
+        "pregunta": "¿El contrato de combustible incluye un coste desglosado específico para servicios de limpieza?",
+        "respuesta_correcta": "No / No consta con valor económico."
+    }
+]

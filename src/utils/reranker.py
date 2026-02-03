@@ -39,8 +39,16 @@ class LocalReranker:
                 return None
             
             try:
-                device = "cuda" if torch.cuda.is_available() else "cpu"
-                logger.info(f"Cargando modelo de re-ranking local ({self._model_name}) en {device}...")
+                if torch.cuda.is_available():
+                    device = "cuda"
+                elif torch.backends.mps.is_available():
+                    device = "mps"
+                else:
+                    device = "cpu"
+                
+                logger.info(f"🚀 Iniciando High-Performance Re-ranker ({self._model_name}) en DEVICE: [{device.upper()}]")
+                logger.info(f"   (Optimization: {'ENABLED' if device != 'cpu' else 'DISABLED'})")
+                
                 self._model = CrossEncoder(self._model_name, device=device)
                 logger.info("Modelo de re-ranking cargado exitosamente.")
             except Exception as e:

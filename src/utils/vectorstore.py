@@ -112,6 +112,20 @@ def add_documents(chunks: List[Dict]) -> int:
     import time
     start_time = time.time()
     
+    # ═══════════════════════════════════════════════════
+    # VALIDACIÓN DE CHUNKS (Rule-Based Validator)
+    # ═══════════════════════════════════════════════════
+    from src.utils.chunk_validator import validate_chunks_batch
+    
+    logger.info(f"🔍 Validando {len(chunks)} chunks antes de ingestión...")
+    validated_chunks, stats = validate_chunks_batch(chunks, abort_threshold=0.1)
+    
+    if stats["invalid"] > 0:
+        logger.warning(f"⚠️ {stats['invalid']}/{stats['total']} chunks rechazados por validación")
+    
+    # Usar chunks validados
+    chunks = validated_chunks
+    
     collection = get_collection()
     
     # Preparar datos para ChromaDB

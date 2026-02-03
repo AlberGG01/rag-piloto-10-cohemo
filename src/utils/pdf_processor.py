@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Procesamiento de archivos PDF.
-Lee y extrae texto de contratos PDF.
+Procesamiento de archivos PDF con PyMuPDF (LangChain).
+Mejor extracción de texto y metadatos estructurales.
 """
 
 import logging
 from pathlib import Path
-from typing import List, Optional, Dict
+from typing import List, Dict, Any
 
-import pdfplumber
+from langchain_community.document_loaders import PyMuPDFLoader
+from langchain_core.documents import Document
 
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
@@ -17,120 +18,85 @@ from src.config import CONTRACTS_PATH
 logger = logging.getLogger(__name__)
 
 
-def read_pdf(pdf_path: Path) -> Optional[str]:
+def load_pdf_documents(pdf_path: Path) -> List[Document]:
     """
-    Lee un archivo PDF y extrae todo su texto.
+    Carga un PDF usando PyMuPDFLoader.
+    Preserva mejor la estructura y tablas que pdfplumber.
     
     Args:
         pdf_path: Ruta al archivo PDF.
     
     Returns:
-        str: Texto extraído del PDF o None si hay error.
+        List[Document]: Lista de documentos LangChain (uno por página).
     """
     try:
-        text_parts = []
+        loader = PyMuPDFLoader(str(pdf_path))
+        documents = loader.load()
         
-        with pdfplumber.open(pdf_path) as pdf:
-            for page_num, page in enumerate(pdf.pages, 1):
-                page_text = page.extract_text()
-                if page_text:
-                    text_parts.append(page_text)
-        
-        full_text = "\n\n".join(text_parts)
-        logger.info(f"PDF leído correctamente: {pdf_path.name} ({len(full_text)} caracteres)")
-        return full_text
+        # Enriquecer metadatos
+        for doc in documents:
+            doc.metadata["filename"] = pdf_path.name
+            doc.metadata["path"] = str(pdf_path)
+            
+            # Normalizar número de página (PyMuPDF usa 0-indexed a veces, aseguramos 1-indexed)
+            if "page" in doc.metadata:
+                 doc.metadata["page"] = doc.metadata["page"] + 1
+            elif "page_number" in doc.metadata:
+                 doc.metadata["page"] = doc.metadata["page_number"] + 1
+            else:
+                 doc.metadata["page"] = 1 # Fallback
+                 
+        logger.info(f"PDF cargado: {pdf_path.name} ({len(documents)} páginas)")
+        return documents
         
     except Exception as e:
-        logger.error(f"Error leyendo PDF {pdf_path.name}: {e}")
-        return None
+        logger.error(f"Error cargando PDF {pdf_path.name}: {e}")
+        return []
 
 
-def read_pdf_with_pages(pdf_path: Path) -> List[Dict]:
+def get_all_contracts(use_normalized: bool = True) -> List[Path]:
     """
-    Lee un PDF y retorna texto por página con metadata.
+    Obtiene todos los archivos de contratos.
     
     Args:
-        pdf_path: Ruta al archivo PDF.
+        use_normalized: Si True, usa archivos .md normalizados.
+                       Si False, usa PDFs originales.
     
     Returns:
-        List[Dict]: Lista de diccionarios con texto y número de página.
+        Lista de rutas a archivos de contratos
     """
-    pages_data = []
-    
-    try:
-        with pdfplumber.open(pdf_path) as pdf:
-            for page_num, page in enumerate(pdf.pages, 1):
-                page_text = page.extract_text()
-                if page_text:
-                    pages_data.append({
-                        "page_num": page_num,
-                        "text": page_text,
-                        "filename": pdf_path.name
-                    })
-        
-        logger.info(f"PDF leído con {len(pages_data)} páginas: {pdf_path.name}")
-        
-    except Exception as e:
-        logger.error(f"Error leyendo PDF con páginas {pdf_path.name}: {e}")
-    
-    return pages_data
-
-
-def get_all_contracts() -> List[Path]:
-    """
-    Obtiene todos los archivos PDF de la carpeta de contratos.
-    
-    Returns:
-        List[Path]: Lista de rutas a archivos PDF.
-    """
-    contracts_path = Path(CONTRACTS_PATH)
+    if use_normalized:
+        # Usar archivos normalizados (.md)
+        from src.config import NORMALIZED_PATH
+        contracts_path = Path(NORMALIZED_PATH)
+        extension = "*.md"
+    else:
+        # Usar PDFs originales
+        contracts_path = Path(CONTRACTS_PATH)
+        extension = "*.pdf"
     
     if not contracts_path.exists():
         logger.warning(f"La carpeta de contratos no existe: {contracts_path}")
         contracts_path.mkdir(parents=True, exist_ok=True)
         return []
     
-    pdf_files = list(contracts_path.glob("*.pdf"))
-    
-    if not pdf_files:
-        logger.warning(f"No se encontraron PDFs en: {contracts_path}")
-    else:
-        logger.info(f"Encontrados {len(pdf_files)} contratos PDF")
-    
-    return sorted(pdf_files)
+    files = list(contracts_path.glob(extension))
+    logger.info(f"📂 Encontrados {len(files)} archivos en {contracts_path}")
+    return sorted(files)
 
 
-def get_contracts_count() -> int:
+def process_contract_for_ingestion(pdf_path: Path) -> List[Dict[str, Any]]:
     """
-    Cuenta el número de contratos PDF disponibles.
+    Procesa un contrato y devuelve una lista de chunks diccionarios 
+    listos para ser usados por el splitter.
+    """
+    documents = load_pdf_documents(pdf_path)
+    processed_data = []
     
-    Returns:
-        int: Número de archivos PDF.
-    """
-    return len(get_all_contracts())
-
-
-def process_all_contracts() -> List[Dict]:
-    """
-    Procesa todos los contratos y retorna sus datos.
-    
-    Returns:
-        List[Dict]: Lista con nombre de archivo y texto de cada contrato.
-    """
-    contracts = []
-    pdf_files = get_all_contracts()
-    
-    for pdf_path in pdf_files:
-        text = read_pdf(pdf_path)
+    for doc in documents:
+        processed_data.append({
+            "text": doc.page_content,
+            "metadata": doc.metadata
+        })
         
-        if text:
-            contracts.append({
-                "filename": pdf_path.name,
-                "path": str(pdf_path),
-                "text": text
-            })
-        else:
-            logger.warning(f"No se pudo extraer texto de: {pdf_path.name}")
-    
-    logger.info(f"Procesados {len(contracts)} de {len(pdf_files)} contratos")
-    return contracts
+    return processed_data

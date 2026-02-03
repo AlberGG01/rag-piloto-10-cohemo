@@ -1,0 +1,533 @@
+{
+  "total_documents": 20,
+  "passed": 18,
+  "failed": 2,
+  "details": [
+    {
+      "filename": "CON_2024_001_Suministro_Vehiculos_Blindados",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_001"
+        ],
+        "entidades": [
+          "Banco Santander"
+        ]
+      },
+      "md_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_001"
+        ],
+        "entidades": [
+          "Banco Santander"
+        ]
+      }
+    },
+    {
+      "filename": "CON_2024_002_Mantenimiento_Armamento",
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Entidades no explícitas en MD: {'CaixaBank Numero'}"
+      ],
+      "pdf_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 8,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_002"
+        ],
+        "entidades": [
+          "CaixaBank Numero"
+        ]
+      },
+      "md_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 8,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_002"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "CON_2024_004_Ciberseguridad_Infraestructuras",
+      "passed": false,
+      "errors": [
+        "Número PERDIDO en normalización: 55667788",
+        "Número PERDIDO en normalización: 2017",
+        "Número PERDIDO en normalización: 2017"
+      ],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_004"
+        ],
+        "entidades": []
+      },
+      "md_critical_data": {
+        "importes_count": 6,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_004"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "CON_2024_005_Municion_Instruccion",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_005"
+        ],
+        "entidades": [
+          "Banco Sabadell"
+        ]
+      },
+      "md_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_005"
+        ],
+        "entidades": [
+          "Banco Sabadell"
+        ]
+      }
+    },
+    {
+      "filename": "CON_2024_007_Obras_Acuartelamiento_Zaragoza",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 9,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_007"
+        ],
+        "entidades": []
+      },
+      "md_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 9,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_007"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "CON_2024_009_Comunicaciones_Tacticas",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 8,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_009"
+        ],
+        "entidades": []
+      },
+      "md_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 8,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_009"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "CON_2024_010_Vigilancia_Instalaciones_Militares",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 6,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_010"
+        ],
+        "entidades": []
+      },
+      "md_critical_data": {
+        "importes_count": 6,
+        "fechas_count": 6,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_010"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "CON_2024_012_Centro_Mando_Retamares",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 8,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_012"
+        ],
+        "entidades": []
+      },
+      "md_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 8,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_012"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "CON_2024_016_Vision_Nocturna_Gen3",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_016"
+        ],
+        "entidades": [
+          "Banco Santander"
+        ]
+      },
+      "md_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_016"
+        ],
+        "entidades": [
+          "Banco Santander"
+        ]
+      }
+    },
+    {
+      "filename": "CON_2024_018_Hangares_Moron_de_la_Frontera",
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Entidades no explícitas en MD: {'BBVA Numero'}"
+      ],
+      "pdf_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 8,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_018"
+        ],
+        "entidades": [
+          "BBVA Numero"
+        ]
+      },
+      "md_critical_data": {
+        "importes_count": 7,
+        "fechas_count": 8,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_018"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "CON_2024_020_Fusiles_Asalto_HK416",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 8,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_020"
+        ],
+        "entidades": [
+          "Banco Sabadell"
+        ]
+      },
+      "md_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 8,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "CON_2024_020"
+        ],
+        "entidades": [
+          "Banco Sabadell"
+        ]
+      }
+    },
+    {
+      "filename": "LIC_2024_003_Uniformidad_Ejercito",
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Entidades no explícitas en MD: {'BBVA Numero'}"
+      ],
+      "pdf_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "LIC_2024_003"
+        ],
+        "entidades": [
+          "BBVA Numero"
+        ]
+      },
+      "md_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "LIC_2024_003"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "LIC_2024_017_Camiones_Logisticos_IVECO",
+      "passed": false,
+      "errors": [
+        "Número PERDIDO en normalización: 12345678901"
+      ],
+      "warnings": [
+        "Entidades no explícitas en MD: {'CaixaBank Numero'}"
+      ],
+      "pdf_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "LIC_2024_017"
+        ],
+        "entidades": [
+          "CaixaBank Numero"
+        ]
+      },
+      "md_critical_data": {
+        "importes_count": 6,
+        "fechas_count": 7,
+        "avales_count": 0,
+        "numeros_contrato": [
+          "LIC_2024_017"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "SER_2024_008_Transporte_Estrategico",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SER_2024_008"
+        ],
+        "entidades": [
+          "Banco Santander"
+        ]
+      },
+      "md_critical_data": {
+        "importes_count": 6,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SER_2024_008"
+        ],
+        "entidades": [
+          "Banco Santander"
+        ]
+      }
+    },
+    {
+      "filename": "SER_2024_013_Formacion_Sistemas_Armas",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SER_2024_013"
+        ],
+        "entidades": []
+      },
+      "md_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SER_2024_013"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "SER_2024_015_Mantenimiento_Flota_C295",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SER_2024_015"
+        ],
+        "entidades": []
+      },
+      "md_critical_data": {
+        "importes_count": 6,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SER_2024_015"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "SER_2024_019_SATCOM_Operaciones",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SER_2024_019"
+        ],
+        "entidades": []
+      },
+      "md_critical_data": {
+        "importes_count": 6,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SER_2024_019"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "SUM_2024_006_Raciones_Combate_Individual",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SUM_2024_006"
+        ],
+        "entidades": []
+      },
+      "md_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SUM_2024_006"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "SUM_2024_011_Combustible_Aviacion_y_Terrestre",
+      "passed": true,
+      "errors": [],
+      "warnings": [],
+      "pdf_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SUM_2024_011"
+        ],
+        "entidades": []
+      },
+      "md_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 7,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SUM_2024_011"
+        ],
+        "entidades": []
+      }
+    },
+    {
+      "filename": "SUM_2024_014_Material_Sanitario_Militar",
+      "passed": true,
+      "errors": [],
+      "warnings": [
+        "Entidades no explícitas en MD: {'Bankia Numero'}"
+      ],
+      "pdf_critical_data": {
+        "importes_count": 4,
+        "fechas_count": 6,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SUM_2024_014"
+        ],
+        "entidades": [
+          "Bankia Numero"
+        ]
+      },
+      "md_critical_data": {
+        "importes_count": 5,
+        "fechas_count": 6,
+        "avales_count": 1,
+        "numeros_contrato": [
+          "SUM_2024_014"
+        ],
+        "entidades": []
+      }
+    }
+  ]
+}

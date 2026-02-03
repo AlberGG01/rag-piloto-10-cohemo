@@ -72,6 +72,10 @@ class SynthesisAgent(BaseAgent):
             # Limpieza final de formato "[Doc: Doc: file...]" si el LLM ya puso brackets
             final_answer = final_answer.replace("[Doc: Doc:", "[Doc:")
             
+            # Loguear decisión del ROUTER
+            from src.agents.rag_agent import route_query
+            complexity = route_query(query)
+            self.logger.info(f"🧠 ROUTER DECISION: {complexity} (Model: {'GPT-4o' if complexity == 'COMPLEX' else 'GPT-4o-mini'})")
 
             # Actualizar estado
             state["final_answer"] = final_answer
@@ -137,8 +141,13 @@ class SynthesisAgent(BaseAgent):
 
     def _generate_answer(self, query: str, context: str, missing: List[str], quality_status: str) -> str:
         """
-        Genera la respuesta con GPT-4o.
+        Genera la respuesta con GPT-4o o GPT-4o-mini según complejidad.
         """
+        from src.agents.rag_agent import route_query
+        from src.config import MODEL_CHATBOT, MODEL_FAST
+        
+        complexity = route_query(query)
+        target_model = MODEL_CHATBOT if complexity == 'COMPLEX' else MODEL_FAST
         
         missing_instruction = ""
         if missing:
@@ -169,15 +178,12 @@ INSTRUCCIONES DE REDACCIÓN:
    - Usa **negritas** para cifras o entidades clave
    - Usa tablas si hay datos comparativos
 4. **Responde Directamente**: Empieza con la respuesta directa a la pregunta.
-   - Usa **negritas** para cifras o entidades clave
-   - Usa tablas si hay datos comparativos
-4. **Responde Directamente**: Empieza con la respuesta directa a la pregunta.
 
 {missing_instruction}
 
 Genera la respuesta final ahora:"""
 
-        return self.call_llm(prompt, max_tokens=2000, temperature=0.0)
+        return self.call_llm(prompt, max_tokens=2000, temperature=0.0, model=target_model)
 
     def _extract_sources(self, chunks: List[Dict]) -> List[Dict]:
         """Extrae lista de fuentes únicas."""
@@ -201,23 +207,29 @@ Genera la respuesta final ahora:"""
     def _reorder_chunks_u_shape(self, chunks: List[Dict]) -> List[Dict]:
         """
         Reordena chunks para poner los más relevantes al INICIO y al FINAL.
-        Estrategia: Top 5 -> Inicio, Siguientes 5 -> Final, Resto -> Medio.
-        Objetivo: Mitigar 'Lost in the Middle' phenomenon.
+        
+        LÓGICA CUSTOM (User Request):
+        - Posición 1 y 2: Los de mayor score (Rank 1, Rank 2)
+        - Posición Final: El siguiente con mayor score (Rank 3)
+        - Resto: En el medio (Rank 4...N)
+        
+        Orden final: [Rank 1, Rank 2, Rank 4, Rank 5, ..., Rank N, Rank 3]
         """
         if not chunks:
             return []
             
         # Asumimos que chunks entran ordenados por score (Highest -> Lowest)
         
-        if len(chunks) <= 5:
-            return chunks
+        if len(chunks) <= 3:
+            return chunks # No hace falta reordenar si son pocos
             
-        top_5 = chunks[:5]
-        next_5 = chunks[5:10] if len(chunks) > 5 else []
-        rest = chunks[10:] if len(chunks) > 10 else []
+        rank_1 = chunks[0]
+        rank_2 = chunks[1]
+        rank_3 = chunks[2]
         
-        # [TOP 5] + [BASURA/MEDIO] + [TOP 6-10]
-        # De esta forma los mejores están donde el LLM presta más atención
-        reordered = top_5 + rest + next_5
+        rest = chunks[3:]
+        
+        # [Rank 1, Rank 2] + [Rank 4...N] + [Rank 3]
+        reordered = [rank_1, rank_2] + rest + [rank_3]
         
         return reordered

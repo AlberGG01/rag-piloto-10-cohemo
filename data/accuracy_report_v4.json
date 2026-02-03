@@ -1,0 +1,399 @@
+{
+    "timestamp": "2026-02-01T20:22:48",
+    "total_questions": 30,
+    "passed": 23,
+    "accuracy_percent": 76.66666666666667,
+    "average_latency": 35.52658041318258,
+    "details": [
+        {
+            "id": "NUM_01",
+            "question": "¿Cuál es el importe total exacto (con céntimos) del contrato CON_2024_012 (Centro de Mando Retamares)?",
+            "rag_response": "INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n**ASUNTO:** Importe total exacto del contrato CON_2024_012 (Centro de Mando Retamares)\n\n**DATOS EXTRAÍDOS Y VERIFICADOS:**\n\n| Concepto | Valor | Fuente Verificada |\n|----------|-------|-------------------|\n| Importe Total del Contrato CON_2024_012 | 28.500.000,00 EUR | **[Doc: CON_2024_012_Centro_Mando_Retamares_normalized.md.pdf, Pág: 1]**, Sección: Cuerpo_Principal |\n\n**SUMA TOTAL:** 28.500.000,00 EUR\n\n**RAZONAMIENTO:** El importe total exacto del contrato CON_2024_012 se encuentra claramente especificado en el **[Doc: CON_2024_012_Centro_Mando_Retamares_normalized.md.pdf, Pág: 1]** bajo la sección 'METADATA GLOBAL' y se confirma en la sección 'IMPORTE Y CONDICIONES ECONÓMICAS' del **[Doc: CON_2024_012_Centro_Mando_Retamares_normalized.md.pdf, Pág: 1]**. El nivel de certeza de esta información es ALTO.\n\n📄 *Fuente: CON_2024_012*",
+            "ground_truth": "28.500.000,00 EUR",
+            "latency_seconds": 75.29137754440308,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta es numéricamente precisa y no contiene información inventada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "NUM_02",
+            "question": "Identifica la entidad bancaria que emitió el aval para el contrato SER_2024_015.",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Identificación de la entidad bancaria que emitió el aval para el contrato SER_2024_015\n\nA continuación, se presenta la información verificada respecto a la entidad bancaria que emitió el aval:\n\n| Concepto                | Valor       | Fuente Verificada                |\n|-------------------------|-------------|----------------------------------|\n| dato_encontrado         | ING Bank    | **[Doc: SER_2024_015_Mantenimiento_Flota_C295_normalized.md.pdf, Pág: 1]**, Cuerpo_Principal    |\n| nivel_certeza           | ALTO        |                                  |\n| razonamiento            | El dato se encuentra claramente indicado en la sección de garantías y avales del **[Doc: SER_2024_015_Mantenimiento_Flota_C295_normalized.md.pdf, Pág: 1]**, donde se menciona la entidad avalista como ING Bank. |                                  |\n\nEste informe se emite con base en la información extraída y verificada de los documentos analizados.\n\n📄 *Fuente: SER_2024_015*",
+            "ground_truth": "ING Bank",
+            "latency_seconds": 10.048704862594604,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta y no contiene información inventada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "NUM_03",
+            "question": "Facilita el importe exacto de la garantía definitiva del contrato CON_2024_016.",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Datos Extraídos\n\n| Concepto                       | Valor            | Fuente Verificada                     |\n|--------------------------------|------------------|--------------------------------------|\n| Importe de la garantía definitiva | 84.000,00 EUR    | **[Doc: CON_2024_016_Vision_Nocturna_Gen3_normalized.md.pdf, Pág: 1]**, Sección: Cuerpo_Principal |\n\n**Nivel de Certeza:** ALTO\n\n**Razonamiento:** El importe de la garantía definitiva se encuentra claramente especificado en la sección de garantías y avales del documento.\n\n📄 *Fuente: CON_2024_016*",
+            "ground_truth": "84.000,00 EUR",
+            "latency_seconds": 8.395398378372192,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta y no contiene información inventada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "NUM_04",
+            "question": "¿Qué normativa MIL específica regula el combustible en el contrato SUM_2024_011?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Normativa que regula el combustible en el contrato SUM_2024_011\n\nA continuación, se presenta la información verificada respecto a la normativa MIL que regula el combustible en el contrato mencionado:\n\n| Concepto                | Valor            | Fuente Verificada                          |\n|-------------------------|------------------|-------------------------------------------|\n| dato_encontrado         | MIL-DTL-83133    | **[Doc: SUM_2024_011_Combustible_Aviacion_y_Terrestre_normalized.md.pdf, Pág: 1]**, Sección: Cuerpo_Principal   |\n| nivel_certeza           | ALTO             |                                           |\n| razonamiento            | La normativa específica que regula el combustible en el contrato SUM_2024_011 se encuentra en la sección de normas aplicables y certificaciones del **[Doc: SUM_2024_011_Combustible_Aviacion_y_Terrestre_normalized.md.pdf, Pág: 1]**. |                                           |\n\n📄 *Fuente: SUM_2024_011*",
+            "ground_truth": "MIL-DTL-83133",
+            "latency_seconds": 10.693868637084961,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta proporcionada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "NUM_05",
+            "question": "Lista los códigos STANAG mencionados en el contrato de Munición de Instrucción (CON_2024_005).",
+            "rag_response": "# INFORME OFICIAL DE PERITO JUDICIAL\n\n**FECHA:** 01/02/2026\n\n**ASUNTO:** Códigos STANAG mencionados en el contrato de Munición de Instrucción (CON_2024_005)\n\n## RESULTADOS\n\nCon base en los datos extraídos y verificados, se presenta la siguiente información respecto a los códigos STANAG mencionados en el contrato:\n\n| Concepto | Valor | Fuente Verificada |\n|----------|-------|-------------------|\n| Códigos STANAG | STANAG 4172, STANAG 4090 | **[Doc: CON_2024_005_Municion_Instruccion_normalized.md.pdf, Pág: 1]**, Sección: Cuerpo_Principal |\n\n**Nivel de Certeza:** ALTO\n\n**Razonamiento:** Los códigos STANAG mencionados en el contrato fueron extraídos directamente de la sección de Normas Aplicables y Certificaciones del **[Doc: CON_2024_005_Municion_Instruccion_normalized.md.pdf, Pág: 1]**, donde se listan explícitamente.\n\n---\n\nEste informe se ha elaborado conforme a los datos proporcionados y verificados, cumpliendo con las instrucciones de redacción establecidas.\n\n📄 *Fuente: CON_2024_005*",
+            "ground_truth": "STANAG 4172, STANAG 4090",
+            "latency_seconds": 49.275564670562744,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta proporcionada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "NUM_06",
+            "question": "¿Qué norma ISO específica se exige en el contrato de Vigilancia (CON_2024_010)?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Datos Extraídos\n\n| Concepto                     | Valor                | Fuente Verificada                     |\n|------------------------------|----------------------|---------------------------------------|\n| norma ISO específica exigida  | UNE-EN ISO 18788     | **[Doc: CON_2024_010_Vigilancia_Instalaciones_Militares_normalized.md.pdf, Pág: 1]**, Sección: Cuerpo_Principal |\n\nLa norma ISO específica exigida en el contrato de Vigilancia (CON_2024_010) es la UNE-EN ISO 18788, como se menciona claramente en la sección de Normativas Aplicables.\n\n📄 *Fuente: CON_2024_010*",
+            "ground_truth": "ISO 18788",
+            "latency_seconds": 10.109570503234863,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta y no añade información falsa.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "NUM_07",
+            "question": "¿Cuál es el importe total de adjudicación del contrato LIC_2024_017?",
+            "rag_response": "# INFORME OFICIAL DE PERITO JUDICIAL\n\n**FECHA:** 01/02/2026\n\n**ASUNTO:** Importe total de adjudicación del contrato LIC_2024_017\n\n## RESULTADOS\n\nCon base en los datos extraídos y verificados, se presenta la siguiente información respecto al importe total de adjudicación del contrato LIC_2024_017:\n\n| Concepto                                      | Valor            | Fuente Verificada                      |\n|-----------------------------------------------|------------------|----------------------------------------|\n| Importe total de adjudicación del contrato LIC_2024_017 | 9.600.000,00 EUR | **[Doc: LIC_2024_017_Camiones_Logisticos_IVECO_normalized.md.pdf, Pág: 1]**, Sección: Cuerpo_Principal |\n\n**SUMA TOTAL:** 9.600.000,00 EUR\n\nEl importe total ha sido verificado con un nivel de certeza ALTO, ya que el valor se encuentra claramente especificado y es consistente en las secciones de METADATA GLOBAL e IMPORTE Y CONDICIONES ECONÓMICAS del **[Doc: LIC_2024_017_Camiones_Logisticos_IVECO_normalized.md.pdf, Pág: 1]**.\n\n📄 *Fuente: LIC_2024_017*",
+            "ground_truth": "9.600.000,00 EUR",
+            "latency_seconds": 41.42871427536011,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta y no contiene información inventada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "NUM_08",
+            "question": "Proporciona el CIF de la empresa adjudicataria del contrato de Ciberseguridad (CON_2024_004).",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n**PREGUNTA ORIGINAL:** Proporciona el CIF de la empresa adjudicataria del contrato de Ciberseguridad (CON_2024_004).\n\nEl dato solicitado NO CONSTA en los documentos analizados.\n\n📄 *Fuente: CON_2024_004*",
+            "ground_truth": "B-55667788",
+            "latency_seconds": 7.211599826812744,
+            "evaluation": {
+                "precision_score": 0,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta no proporciona el CIF correcto que es 'B-55667788'.",
+                "verdict": "FAIL"
+            }
+        },
+        {
+            "id": "NUM_09",
+            "question": "¿A cuánto asciende la garantía definitiva del contrato de Transporte Estratégico (SER_2024_008)?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## DATOS EXTRAÍDOS\n\n| Concepto                       | Valor            | Fuente Verificada               |\n|--------------------------------|------------------|---------------------------------|\n| Garantía definitiva del contrato| 112.000,00 EUR   | **[Doc: SER_2024_008_Transporte_Estrategico_normalized.md.pdf, Pág: 1]**, Cuerpo_Principal   |\n\n**SUMA TOTAL:** 112.000,00 EUR\n\n**Observaciones:** La garantía definitiva se encuentra claramente especificada en la sección de garantías y avales del documento.\n\n📄 *Fuente: SER_2024_008*",
+            "ground_truth": "112.000,00 EUR",
+            "latency_seconds": 7.747743844985962,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta y no contiene información inventada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "NUM_10",
+            "question": "¿Qué dos normativas de calidad y ergonomía aplican al contrato SUM_2024_014?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Normativas de Calidad y Ergonomía Aplicables al Contrato SUM_2024_014\n\n| Concepto | Valor                     | Fuente Verificada                     |\n|----------|---------------------------|--------------------------------------|\n| Dato 1   | MIL-STD-1472              | **[Doc: SUM_2024_014_Material_Sanitario_Militar_normalized.md.pdf, Pág: 1]**, Sección: Cuerpo_Principal |\n| Dato 2   | UNE-EN ISO 13485          | **[Doc: SUM_2024_014_Material_Sanitario_Militar_normalized.md.pdf, Pág: 1]**, Sección: Cuerpo_Principal |\n\n**Nivel de Certeza:** ALTO  \n**Razonamiento:** Las normativas de calidad y ergonomía aplicables al contrato SUM_2024_014 se encuentran listadas en la sección de 'Normas Aplicables y Certificaciones' del **[Doc: SUM_2024_014_Material_Sanitario_Militar_normalized.md.pdf, Pág: 1]**.\n\n📄 *Fuente: SUM_2024_014*",
+            "ground_truth": "ISO 13485, MIL-STD-1472",
+            "latency_seconds": 10.834579467773438,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta proporcionada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "INF_01",
+            "question": "¿Qué contratos incluyen cláusulas de penalización por retraso de 50.000 EUR diarios?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Datos Extraídos\n\n| Concepto                                           | Valor                     | Fuente Verificada                                                                 |\n|----------------------------------------------------|---------------------------|-----------------------------------------------------------------------------------|\n| Penalización por incumplimiento                     | 50.000 EUR por cada día de indisponibilidad de aeronave | **[Doc: SER_2024_015_Mantenimiento_Flota_C295_normalized.md.pdf, Pág: 1]** - SER_2024_015_Mantenimiento_Flota_C295_normalized.md.pdf |\n\n**SUMA TOTAL:** No se proporciona un total acumulado, ya que la penalización es diaria y depende de la duración de la indisponibilidad.\n\n**Nivel de Certeza:** ALTO\n\n**Razonamiento:** La cláusula de penalización por incumplimiento especifica claramente la penalización de 50.000 EUR por cada día de indisponibilidad de aeronave, lo que coincide con la solicitud del usuario.\n\n📄 *Fuente: CON_2024_001, SER_2024_013, CON_2024_020, CON_2024_009, CON_2024_016, SER_2024_019, CON_2024_002, CON_2024_018, SUM_2024_011, CON_2024_007, SUM_2024_006, LIC_2024_017, SER_2024_008, CON_2024_010, CON_2024_012, SER_2024_015, CON_2024_005, SUM_2024_014, LIC_2024_003, CON_2024_004*",
+            "ground_truth": "SER_2024_015, SUM_2024_011",
+            "latency_seconds": 11.13643503189087,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 3,
+                "reasoning": "La respuesta incluye contratos adicionales no verificados en la verdad absoluta.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "INF_02",
+            "question": "Compara el importe total del contrato de Ciberseguridad con el de Visión Nocturna. ¿Cuál es mayor y por cuánto?",
+            "rag_response": "El dato solicitado NO CONSTA en los documentos analizados.\n\n📄 *Fuente: CON_2024_001*",
+            "ground_truth": "Ciberseguridad (4.5M) > Visión Nocturna (4.2M). Diferencia: 300.000 EUR.",
+            "latency_seconds": 60.95098686218262,
+            "evaluation": {
+                "precision_score": 0,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta no proporciona los datos numéricos solicitados.",
+                "verdict": "FAIL"
+            }
+        },
+        {
+            "id": "INF_03",
+            "question": "¿Qué contrato de armamento requiere interfaces de raíles Picatinny (STANAG 4694/MIL-STD-1913)?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## DATOS EXTRAÍDOS\n\n| Concepto                       | Valor                | Fuente Verificada                |\n|--------------------------------|---------------------|----------------------------------|\n| dato_encontrado                | CON_2024_020        | **[Doc: CON_2024_020_Fusiles_Asalto_HK416_normalized.md.pdf, Pág: 1]** y **[Doc: CON_2024_020_Fusiles_Asalto_HK416_normalized.md.pdf, Pág: 1]**       |\n| nivel_certeza                  | ALTO                |                                  |\n| razonamiento                   | El contrato CON_2024_020 menciona explícitamente las normas STANAG 4694 y MIL-STD-1913, que son las requeridas para interfaces de raíles Picatinny. |                                  |\n\n📄 *Fuente: CON_2024_001, SER_2024_013, CON_2024_020, CON_2024_009, CON_2024_016, SER_2024_019, CON_2024_002, CON_2024_018, SUM_2024_011, CON_2024_007, SUM_2024_006, LIC_2024_017, SER_2024_008, CON_2024_010, CON_2024_012, SER_2024_015, CON_2024_005, SUM_2024_014, LIC_2024_003, CON_2024_004*",
+            "ground_truth": "CON_2024_020 (Fusiles HK416)",
+            "latency_seconds": 13.49990963935852,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta proporcionada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "INF_04",
+            "question": "¿Cuál es la fecha final de ejecución material programada para el contrato de Retamares (CON_2024_012)?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## DATOS EXTRAÍDOS\n\n| Concepto                                   | Valor          | Fuente Verificada                          |\n|--------------------------------------------|----------------|-------------------------------------------|\n| Fecha final de ejecución material programada | 12/09/2027     | **[Doc: CON_2024_012_Centro_Mando_Retamares_normalized.md.pdf, Pág: 1]**, Sección: Cuerpo_Principal   |\n\n### RAZONAMIENTO\nLa fecha final de ejecución material programada se encuentra explícitamente mencionada en la metadata global del contrato, con un nivel de certeza ALTO.\n\n📄 *Fuente: CON_2024_012*",
+            "ground_truth": "12/10/2027",
+            "latency_seconds": 9.944416522979736,
+            "evaluation": {
+                "precision_score": 4,
+                "hallucination_score": 5,
+                "reasoning": "La fecha es incorrecta por un mes, pero no hay información inventada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "INF_05",
+            "question": "¿Qué normativa de seguridad alimentaria aplica al suministro de raciones de combate?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Normativa de Seguridad Alimentaria Aplicable al Suministro de Raciones de Combate\n\nA continuación, se presenta la información verificada respecto a la normativa de seguridad alimentaria que aplica al suministro de raciones de combate:\n\n| Concepto                       | Valor                                         | Fuente Verificada                                                                 |\n|--------------------------------|-----------------------------------------------|-----------------------------------------------------------------------------------|\n| dato_encontrado                | Reglamento CE 852/2004                       | **[Doc: SUM_2024_006_Raciones_Combate_Individual_normalized.md.pdf, Pág: 1]** (SUM_2024_006_Raciones_Combate_Individual_normalized.md.pdf)         |\n| nivel_certeza                  | ALTO                                         |                                                                                   |\n| razonamiento                   | La normativa de seguridad alimentaria aplicable al suministro de raciones de combate se menciona explícitamente en la sección de normas aplicables y certificaciones del documento. |                                                                                   |\n\n📄 *Fuente: CON_2024_001, SER_2024_013, CON_2024_020, CON_2024_009, CON_2024_016, SER_2024_019, CON_2024_002, CON_2024_018, SUM_2024_011, CON_2024_007, SUM_2024_006, LIC_2024_017, SER_2024_008, CON_2024_010, CON_2024_012, SER_2024_015, CON_2024_005, SUM_2024_014, LIC_2024_003, CON_2024_004*",
+            "ground_truth": "ISO 22000",
+            "latency_seconds": 22.21842050552368,
+            "evaluation": {
+                "precision_score": 1,
+                "hallucination_score": 1,
+                "reasoning": "La respuesta menciona una normativa incorrecta y añade información no verificada.",
+                "verdict": "FAIL"
+            }
+        },
+        {
+            "id": "INF_06",
+            "question": "Verifica si la garantía del contrato SER_2024_008 corresponde exactamente al 2% del importe total.",
+            "rag_response": "# INFORME OFICIAL DE PERITO JUDICIAL\n\n**FECHA:** 01/02/2026\n\n**ASUNTO:** Verificación de la garantía del contrato SER_2024_008\n\n## RESULTADOS\n\nSe ha verificado la información solicitada con un nivel de certeza ALTO. A continuación, se presenta la información extraída de los documentos analizados:\n\n| Concepto                  | Valor          | Fuente Verificada                      |\n|---------------------------|----------------|----------------------------------------|\n| Garantía Definitiva       | 112.000,00 EUR | **[Doc: SER_2024_008_Transporte_Estrategico_normalized.md.pdf, Pág: 1]**, Sección: Cuerpo_Principal |\n\n**RAZONAMIENTO:** La garantía definitiva de 112.000,00 EUR corresponde exactamente al 2% del importe total de 5.600.000,00 EUR, como se indica en la sección de 'GARANTÍAS Y AVALES'.\n\n**CONCLUSIÓN:** La garantía del contrato SER_2024_008 corresponde exactamente al 2% del importe total, según los datos verificados.\n\n📄 *Fuente: SER_2024_008*",
+            "ground_truth": "Sí (112.000 es el 2% de 5.600.000)",
+            "latency_seconds": 40.35400605201721,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta es numéricamente precisa y no contiene información inventada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "INF_07",
+            "question": "Identifica el contrato de comunicaciones que requiere el estándar STANAG 4538.",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Datos Extraídos\n\n| Concepto                       | Valor                | Fuente Verificada                          |\n|--------------------------------|---------------------|-------------------------------------------|\n| dato_encontrado                | CON_2024_009        | **[Doc: CON_2024_009_Comunicaciones_Tacticas_normalized.md.pdf, Pág: 1]**, Sección: Cuerpo_Principal   |\n| nivel_certeza                  | ALTO                |                                           |\n| razonamiento                   | El contrato CON_2024_009 menciona explícitamente el cumplimiento del estándar STANAG 4538 en la sección de normativas aplicables. |                                           |\n\n### Conclusión\nEl contrato de comunicaciones que requiere el estándar STANAG 4538 es el **CON_2024_009**.\n\n📄 *Fuente: CON_2024_001, SER_2024_013, CON_2024_020, CON_2024_009, CON_2024_016, SER_2024_019, CON_2024_002, CON_2024_018, SUM_2024_011, CON_2024_007, SUM_2024_006, LIC_2024_017, SER_2024_008, CON_2024_010, CON_2024_012, SER_2024_015, CON_2024_005, SUM_2024_014, LIC_2024_003, CON_2024_004*",
+            "ground_truth": "CON_2024_009",
+            "latency_seconds": 18.577683925628662,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta y no contiene información inventada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "INF_08",
+            "question": "Calcula la diferencia de importe entre el Mantenimiento C295 y los Hangares de Morón.",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## DATOS EXTRAÍDOS\n\nEl dato solicitado NO CONSTA en los documentos analizados.\n\n📄 *Fuente: CON_2024_001*",
+            "ground_truth": "2.400.000,00 EUR (18.2M - 15.8M)",
+            "latency_seconds": 7.020216226577759,
+            "evaluation": {
+                "precision_score": 0,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta no proporciona el dato numérico solicitado.",
+                "verdict": "FAIL"
+            }
+        },
+        {
+            "id": "INF_09",
+            "question": "¿Qué contrato sanitario incluye requisitos de ergonomía militar (MIL-STD-1472)?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## DATOS EXTRAÍDOS\n\n| Concepto                     | Valor                     | Fuente Verificada                          |\n|------------------------------|---------------------------|-------------------------------------------|\n| dato_encontrado              | SUM_2024_014              | **[Doc: SUM_2024_014_Material_Sanitario_Militar_normalized.md.pdf, Pág: 1]**, Sección: Cuerpo_Principal   |\n| nivel_certeza                | ALTO                      |                                           |\n| razonamiento                 | El contrato sanitario SUM_2024_014 menciona explícitamente la normativa MIL-STD-1472 en la sección de normativas aplicables. |                                           |\n\n### CONCLUSIÓN\nEl contrato sanitario que incluye requisitos de ergonomía militar (MIL-STD-1472) es el **SUM_2024_014**.\n\n📄 *Fuente: CON_2024_001, SER_2024_013, CON_2024_020, CON_2024_009, CON_2024_016, SER_2024_019, CON_2024_002, CON_2024_018, SUM_2024_011, CON_2024_007, LIC_2024_017, SUM_2024_006, SER_2024_008, CON_2024_010, CON_2024_012, SER_2024_015, CON_2024_005, SUM_2024_014, LIC_2024_003, CON_2024_004*",
+            "ground_truth": "SUM_2024_014",
+            "latency_seconds": 19.044909238815308,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta proporcionada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "INF_10",
+            "question": "Suma los importes totales de los contratos de Combustible Aviación y Mantenimiento C295.",
+            "rag_response": "# INFORME OFICIAL DE PERITO JUDICIAL\n\n**FECHA:** 01/02/2026\n\n## Resumen de Datos Verificados\n\nA continuación, se presenta la información verificada respecto a los importes totales de los contratos de Combustible Aviación y Mantenimiento C295:\n\n| Concepto                  | Valor             | Fuente Verificada     |\n|---------------------------|-------------------|-----------------------|\n| Contrato Combustible Aviación | 6.800.000,00 EUR | **[Doc: SUM_2024_011_Combustible_Aviacion_y_Terrestre_normalized.md.pdf, Pág: 1]**           |\n| Contrato Mantenimiento C295   | 18.200.000,00 EUR | **[Doc: SER_2024_015_Mantenimiento_Flota_C295_normalized.md.pdf, Pág: 1]**           |\n\n**SUMA TOTAL:** 25.000.000,00 EUR\n\n**Nivel de Certeza:** ALTO\n\n**Razonamiento:** El importe total del contrato de Combustible Aviación es 6.800.000,00 EUR (**[Doc: SUM_2024_011_Combustible_Aviacion_y_Terrestre_normalized.md.pdf, Pág: 1]**) y el importe total del contrato de Mantenimiento C295 es 18.200.000,00 EUR (**[Doc: SER_2024_015_Mantenimiento_Flota_C295_normalized.md.pdf, Pág: 1]**). La suma de ambos importes es 25.000.000,00 EUR.\n\n📄 *Fuente: CON_2024_001, SER_2024_013, CON_2024_020, CON_2024_009, CON_2024_016, SER_2024_019, CON_2024_002, CON_2024_018, SUM_2024_011, CON_2024_007, SUM_2024_006, LIC_2024_017, SER_2024_008, CON_2024_010, CON_2024_012, SER_2024_015, CON_2024_005, SUM_2024_014, LIC_2024_003*",
+            "ground_truth": "25.000.000,00 EUR (6.8M + 18.2M)",
+            "latency_seconds": 232.18188500404358,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta en importes y suma.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "EDGE_01",
+            "question": "Lista los contratos que citan la norma ISO 9001 de forma genérica (sin especificar año).",
+            "rag_response": "El dato solicitado NO CONSTA en los documentos analizados.\n\n📄 *Fuente: CON_2024_005, CON_2024_002, CON_2024_018, SUM_2024_011, SUM_2024_014, CON_2024_001, SER_2024_013, CON_2024_020, LIC_2024_003, SUM_2024_006, CON_2024_009, CON_2024_004, CON_2024_016, SER_2024_008, SER_2024_015, CON_2024_010*",
+            "ground_truth": "LIC_2024_003, CON_2024_001, CON_2024_002",
+            "latency_seconds": 115.90460324287415,
+            "evaluation": {
+                "precision_score": 1,
+                "hallucination_score": 3,
+                "reasoning": "La respuesta omite contratos que sí citan la norma ISO 9001 según la verdad absoluta.",
+                "verdict": "FAIL"
+            }
+        },
+        {
+            "id": "EDGE_02",
+            "question": "¿Quién figura como responsable técnico del contrato de suministro de Drones Predator?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Consulta sobre el responsable técnico del contrato de suministro de Drones Predator\n\nEl dato solicitado NO CONSTA en los documentos analizados.\n\n📄 *Fuente: CON_2024_002, CON_2024_001, LIC_2024_017, CON_2024_005*",
+            "ground_truth": "No consta / Información inexistente en la base documental.",
+            "latency_seconds": 5.997897624969482,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta de la IA coincide perfectamente con la verdad absoluta.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "EDGE_03",
+            "question": "¿Existe algún contrato cuyo aval haya sido emitido explícitamente por ING Bank? Indica cuál.",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## DATOS EXTRAÍDOS\n\n| Concepto                       | Valor                          | Fuente Verificada                                                   |\n|--------------------------------|--------------------------------|--------------------------------------------------------------------|\n| dato_encontrado                | SER_2024_015                   | **[Doc: SER_2024_015_Mantenimiento_Flota_C295_normalized.md.pdf, Pág: 1]** - SER_2024_015_Mantenimiento_Flota_C295_normalized.md.pdf |\n| nivel_certeza                  | ALTO                           |                                                                    |\n| razonamiento                   | El contrato SER_2024_015 tiene como entidad avalista a ING Bank, lo que confirma que existe un contrato cuyo aval ha sido emitido explícitamente por esta entidad. |\n\n### CONCLUSIÓN\nSí, existe un contrato cuyo aval ha sido emitido explícitamente por ING Bank, identificado como SER_2024_015.\n\n📄 *Fuente: CON_2024_001, SER_2024_013, CON_2024_020, CON_2024_009, CON_2024_016, SER_2024_019, CON_2024_002, CON_2024_018, SUM_2024_011, CON_2024_007, LIC_2024_017, SUM_2024_006, SER_2024_008, CON_2024_010, CON_2024_012, SER_2024_015, CON_2024_005, SUM_2024_014, LIC_2024_003, CON_2024_004*",
+            "ground_truth": "Sí, SER_2024_015.",
+            "latency_seconds": 15.999269485473633,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta de la IA coincide exactamente con la verdad absoluta proporcionada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "EDGE_04",
+            "question": "¿Cuál es el contrato que contiene mayor densidad de hitos temporales identificados (cerca de 10 fechas)?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Datos Extraídos\n\n| Concepto                          | Valor              | Fuente Verificada |\n|-----------------------------------|--------------------|-------------------|\n| dato_encontrado                   | CON_2024_007       | **[Doc: CON_2024_007_Obras_Acuartelamiento_Zaragoza_normalized.md.pdf, Pág: 1]**       |\n| nivel_certeza                     | ALTO               |                   |\n| razonamiento                      | El contrato CON_2024_007 contiene 9 fechas únicas relevantes, lo que lo convierte en el contrato con mayor densidad de hitos temporales identificados. |                   |\n\n📄 *Fuente: CON_2024_001, SER_2024_013, CON_2024_020, CON_2024_009, CON_2024_016, SER_2024_019, CON_2024_002, CON_2024_018, SUM_2024_011, CON_2024_007, SUM_2024_006, LIC_2024_017, SER_2024_008, CON_2024_010, CON_2024_012, SER_2024_015, CON_2024_005, SUM_2024_014, LIC_2024_003, CON_2024_004*",
+            "ground_truth": "CON_2024_007 (Zaragoza) o CON_2024_009 (Comunicaciones)",
+            "latency_seconds": 18.166568994522095,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta identifica correctamente el contrato CON_2024_007 como uno de los contratos con mayor densidad de hitos temporales, coincidiendo con la verdad absoluta.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "EDGE_05",
+            "question": "Identifica los contratos con una penalización exacta de 10.000 EUR (ni más ni menos).",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Datos Extraídos\n\n| Concepto                          | Valor        | Fuente Verificada                                                                 |\n|-----------------------------------|--------------|----------------------------------------------------------------------------------|\n| Penalización por incumplimiento    | 10.000 EUR   | **[Doc: SER_2024_008_Transporte_Estrategico_normalized.md.pdf, Pág: 1]** (SER_2024_008_Transporte_Estrategico_normalized.md.pdf)            |\n\n**SUMA TOTAL:** 10.000 EUR\n\n**Nivel de Certeza:** ALTO\n\n**Razonamiento:** La penalización por incumplimiento está claramente especificada como 10.000 EUR por cada incidencia de seguridad en transporte.\n\n📄 *Fuente: CON_2024_001, SER_2024_013, CON_2024_020, CON_2024_009, CON_2024_016, SER_2024_019, CON_2024_002, CON_2024_018, SUM_2024_011, CON_2024_007, SUM_2024_006, LIC_2024_017, SER_2024_008, CON_2024_010, CON_2024_012, SER_2024_015, CON_2024_005, SUM_2024_014, LIC_2024_003, CON_2024_004*",
+            "ground_truth": "SER_2024_008, SER_2024_019",
+            "latency_seconds": 16.324183464050293,
+            "evaluation": {
+                "precision_score": 3,
+                "hallucination_score": 3,
+                "reasoning": "La respuesta incluye contratos no verificados en la verdad absoluta.",
+                "verdict": "FAIL"
+            }
+        },
+        {
+            "id": "EDGE_06",
+            "question": "¿Qué contrato prohíbe explícitamente la subcontratación de actividades 'por razones de seguridad'?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Datos Extraídos\n\n| Concepto | Valor | Fuente Verificada |\n|----------|-------|-------------------|\n| dato_encontrado | Prohibida absolutamente por razones de seguridad | **[Doc: CON_2024_004_Ciberseguridad_Infraestructuras_normalized.md.pdf, Pág: 1]** (CON_2024_004_Ciberseguridad_Infraestructuras_normalized.md.pdf), Sección: Cuerpo_Principal |\n| nivel_certeza | ALTO | - |\n| razonamiento | La cláusula de subcontratación en el **[Doc: CON_2024_004_Ciberseguridad_Infraestructuras_normalized.md.pdf, Pág: 1]** establece explícitamente que está prohibida por razones de seguridad. | - |\n\n### Respuesta a la Pregunta Original\nEl contrato que prohíbe explícitamente la subcontratación de actividades 'por razones de seguridad' es el mencionado en el **[Doc: CON_2024_004_Ciberseguridad_Infraestructuras_normalized.md.pdf, Pág: 1]** (CON_2024_004_Ciberseguridad_Infraestructuras_normalized.md.pdf).\n\n📄 *Fuente: SER_2024_019, CON_2024_005, CON_2024_002, CON_2024_018, SUM_2024_011, SUM_2024_014, CON_2024_001, SER_2024_013, CON_2024_007, CON_2024_020, LIC_2024_017, CON_2024_012, CON_2024_009, CON_2024_004, CON_2024_016, SER_2024_008, SER_2024_015, CON_2024_010*",
+            "ground_truth": "CON_2024_004",
+            "latency_seconds": 13.094778537750244,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta identifica correctamente el contrato CON_2024_004 como el que prohíbe la subcontratación por razones de seguridad.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "EDGE_07",
+            "question": "¿Qué contratos comparten un hito de ejecución fijado para el 16/12/2024?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Contratos con hito de ejecución fijado para el 16/12/2024\n\nA continuación, se presenta la información sobre los contratos que comparten un hito de ejecución fijado para el 16/12/2024:\n\n| Concepto                          | Valor                | Fuente Verificada      |\n|-----------------------------------|---------------------|------------------------|\n| Contrato                          | CON_2024_002        | Documentos 10, 21, 36  |\n| Hito                              | Fecha de firma      | Documentos 10, 21, 36  |\n| Fecha                             | 16/12/2024         | Documentos 10, 21, 36  |\n| Contrato                          | SER_2024_008        | Documentos 10, 21, 36  |\n| Hito                              | Renovación flota transporte | Documentos 10, 21, 36  |\n| Fecha                             | 16/12/2024         | Documentos 10, 21, 36  |\n| Contrato                          | CON_2024_004        | Documentos 10, 21, 36  |\n| Hito                              | Despliegue SOC      | Documentos 10, 21, 36  |\n| Fecha                             | 16/12/2024         | Documentos 10, 21, 36  |\n\n### Nivel de Certeza\nEl nivel de certeza de la información presentada es **ALTO**. Se encontraron tres contratos que tienen un hito de ejecución fijado para el 16/12/2024 en los documentos revisados.\n\n📄 *Fuente: CON_2024_001, SER_2024_013, CON_2024_020, CON_2024_009, CON_2024_016, SER_2024_019, CON_2024_002, CON_2024_018, SUM_2024_011, CON_2024_007, LIC_2024_017, SUM_2024_006, SER_2024_008, CON_2024_010, CON_2024_012, SER_2024_015, CON_2024_005, SUM_2024_014, LIC_2024_003, CON_2024_004*",
+            "ground_truth": "CON_2024_004, CON_2024_007, SER_2024_008, SER_2024_019",
+            "latency_seconds": 29.04826259613037,
+            "evaluation": {
+                "precision_score": 3,
+                "hallucination_score": 3,
+                "reasoning": "La respuesta incluye un contrato incorrecto y omite uno correcto.",
+                "verdict": "FAIL"
+            }
+        },
+        {
+            "id": "EDGE_08",
+            "question": "¿Qué contrato de suministros combina normativas ISO (civiles) y STANAG (militares) simultáneamente?",
+            "rag_response": "INFORME OFICIAL DEL PERITO JUDICIAL\n\n**FECHA:** 01/02/2026\n\n**PREGUNTA ORIGINAL:**  \n¿Qué contrato de suministros combina normativas ISO (civiles) y STANAG (militares) simultáneamente?\n\n**RESULTADO DEL ANÁLISIS:**  \nEl dato solicitado ha sido encontrado con un nivel de certeza ALTO. A continuación, se presenta la información verificada:\n\n| Concepto | Valor | Fuente Verificada |\n|----------|-------|-------------------|\n| Contrato de suministros que combina normativas ISO y STANAG | SUM_2024_006 | **[Doc: SUM_2024_006_Raciones_Combate_Individual_normalized.md.pdf, Pág: 1]** |\n\n**RAZONAMIENTO:**  \nEl contrato SUM_2024_006 combina normativas ISO (ISO 22000) y STANAG (STANAG 2937) simultáneamente, como se detalla en el **[Doc: SUM_2024_006_Raciones_Combate_Individual_normalized.md.pdf, Pág: 1]**.\n\nEste informe se ha elaborado conforme a los datos extraídos y verificados, cumpliendo con las instrucciones de redacción establecidas.\n\n📄 *Fuente: SER_2024_019, CON_2024_002, SUM_2024_011, SUM_2024_014, CON_2024_001, SER_2024_013, CON_2024_020, LIC_2024_017, SUM_2024_006, CON_2024_009, LIC_2024_003, CON_2024_012, CON_2024_004, CON_2024_016, CON_2024_010*",
+            "ground_truth": "SUM_2024_006 (ISO 22000 + STANAG 2937)",
+            "latency_seconds": 126.30367231369019,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta proporcionada.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "EDGE_09",
+            "question": "Identifica el contrato de menor cuantía económica de toda la base de datos.",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Datos Extraídos\n\n| Concepto                                   | Valor              | Fuente Verificada                                                                 |\n|--------------------------------------------|--------------------|----------------------------------------------------------------------------------|\n| Importe total del contrato de menor cuantía | 425.000,00 EUR     | **[Doc: SUM_2024_014_Material_Sanitario_Militar_normalized.md.pdf, Pág: 1]** - SUM_2024_014_Material_Sanitario_Militar_normalized.md.pdf       |\n\n**SUMA TOTAL:** 425.000,00 EUR\n\n### Nivel de Certeza\nEl nivel de certeza del dato encontrado es ALTO, ya que el importe total del contrato fue extraído directamente del documento que detalla el suministro de equipamiento sanitario, donde se especifica claramente el importe.\n\n📄 *Fuente: CON_2024_001, SER_2024_013, CON_2024_020, CON_2024_009, CON_2024_016, SER_2024_019, CON_2024_002, CON_2024_018, SUM_2024_011, CON_2024_007, LIC_2024_017, SUM_2024_006, SER_2024_008, CON_2024_010, CON_2024_012, SER_2024_015, CON_2024_005, SUM_2024_014, LIC_2024_003, CON_2024_004*",
+            "ground_truth": "SUM_2024_014 (425.000,00 EUR)",
+            "latency_seconds": 18.934913396835327,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide exactamente con la verdad absoluta en términos de importe y fuente.",
+                "verdict": "PASS"
+            }
+        },
+        {
+            "id": "EDGE_10",
+            "question": "¿El contrato de combustible incluye un coste desglosado específico para servicios de limpieza?",
+            "rag_response": "# INFORME OFICIAL\n\n**FECHA:** 01/02/2026\n\n## Análisis de la Pregunta Original\n\n**Pregunta:** ¿El contrato de combustible incluye un coste desglosado específico para servicios de limpieza?\n\n### Resultados de la Investigación\n\nEl dato solicitado NO CONSTA en los documentos analizados.\n\n📄 *Fuente: CON_2024_001*",
+            "ground_truth": "No / No consta con valor económico.",
+            "latency_seconds": 5.62339973449707,
+            "evaluation": {
+                "precision_score": 5,
+                "hallucination_score": 5,
+                "reasoning": "La respuesta coincide perfectamente con la verdad absoluta.",
+                "verdict": "PASS"
+            }
+        }
+    ]
+}

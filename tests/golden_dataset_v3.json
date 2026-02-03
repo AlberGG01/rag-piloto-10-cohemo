@@ -1,0 +1,102 @@
+[
+    {
+        "id": 1,
+        "pregunta": "¿Cuál es el importe total del contrato del Centro de Mando de Retamares?",
+        "respuesta_correcta": "28.500.000,00 EUR (IVA incluido)"
+    },
+    {
+        "id": 2,
+        "pregunta": "¿Cuántos días naturales dura el contrato de ciberseguridad?",
+        "respuesta_correcta": "880 días naturales"
+    },
+    {
+        "id": 3,
+        "pregunta": "¿Qué empresa es el contratista del proyecto de vigilancia de instalaciones militares?",
+        "respuesta_correcta": "SecureMil Systems S.L."
+    },
+    {
+        "id": 4,
+        "pregunta": "¿Cuál es el número de aval del contrato de camiones logísticos IVECO?",
+        "respuesta_correcta": "AV-2024-1717"
+    },
+    {
+        "id": 5,
+        "pregunta": "¿Qué porcentaje de garantía definitiva se requiere sobre el importe total en el contrato de fusiles de asalto HK416?",
+        "respuesta_correcta": "2.0% sobre el importe total"
+    },
+    {
+        "id": 6,
+        "pregunta": "¿Cuántas unidades de camiones IVECO Trakker se van a entregar en el lote 3 y cuándo está programada su entrega?",
+        "respuesta_correcta": "20 unidades en el lote 3, programadas para el 20/05/2026"
+    },
+    {
+        "id": 7,
+        "pregunta": "¿Qué normativas ISO deben cumplirse en el contrato de ciberseguridad?",
+        "respuesta_correcta": "ISO 27001:2022"
+    },
+    {
+        "id": 8,
+        "pregunta": "¿Cuál es la fecha de vencimiento del aval del contrato del Centro de Mando de Retamares?",
+        "respuesta_correcta": "La fecha de vencimiento del aval no se especifica en el Markdown normalizado para este contrato"
+    },
+    {
+        "id": 9,
+        "pregunta": "¿Cuántos días tiene de plazo de ejecución el contrato de suministro de camiones logísticos?",
+        "respuesta_correcta": "370 días naturales"
+    },
+    {
+        "id": 10,
+        "pregunta": "¿Qué entidad avalista respalda el contrato de hangares en Morón de la Frontera?",
+        "respuesta_correcta": "BBVA"
+    },
+    {
+        "id": 11,
+        "pregunta": "¿Cuál es el importe de la base imponible del contrato de comunicaciones tácticas?",
+        "respuesta_correcta": "10.330.578,51 EUR"
+    },
+    {
+        "id": 12,
+        "pregunta": "¿Qué código NATO Stock Number (NSN) tiene asignado el contrato de camiones IVECO?",
+        "respuesta_correcta": "NSN-2320234567890"
+    },
+    {
+        "id": 13,
+        "pregunta": "¿Cuánto es la penalización por cada vehículo y día de retraso en el contrato de camiones IVECO?",
+        "respuesta_correcta": "1.500 EUR por vehículo y día de retraso"
+    },
+    {
+        "id": 14,
+        "pregunta": "¿Qué plazo de ejecución tiene el contrato de obras del acuartelamiento de Zaragoza?",
+        "respuesta_correcta": "El plazo de ejecución específico en días no se menciona en el Markdown normalizado de este contrato"
+    },
+    {
+        "id": 15,
+        "pregunta": "¿Cuál es el importe total del contrato de mantenimiento de armamento?",
+        "respuesta_correcta": "1.875.000,00 EUR (IVA incluido)"
+    },
+    {
+        "id": 16,
+        "pregunta": "¿Qué banco avalista respalda el contrato de visión nocturna Gen3?",
+        "respuesta_correcta": "Banco Santander"
+    },
+    {
+        "id": 17,
+        "pregunta": "¿Cuántos chunks se crearon del documento de ciberseguridad infraestructuras durante la ingesta?",
+        "respuesta_correcta": "14 chunks"
+    },
+    {
+        "id": 18,
+        "pregunta": "¿Cuál es la clasificación de seguridad del contrato de ciberseguridad?",
+        "respuesta_correcta": "SECRETO"
+    },
+    {
+        "id": 19,
+        "pregunta": "¿Qué ley de secretos oficiales se menciona en el contrato de ciberseguridad?",
+        "respuesta_correcta": "Ley 9/1968 de Secretos Oficiales"
+    },
+    {
+        "id": 20,
+        "pregunta": "¿Cuánto es el IVA (21%) del contrato de suministro de vehículos blindados?",
+        "respuesta_correcta": "El IVA específico no se extrae, pero debe calcularse como el 21% de la base imponible del contrato correspondiente"
+    }
+]

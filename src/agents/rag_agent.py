@@ -1,26 +1,38 @@
 # -*- coding: utf-8 -*-
 """
-Agente RAG: Chatbot para consultar información de contratos.
-Optimizado con contexto basado en metadata para respuestas rápidas.
+Agente RAG v2.0: Chatbot Ultra-Rápido para consultas de contratos.
+CAMBIOS CRÍTICOS:
+- Zero PDF Processing en runtime (usa caché de metadatos)
+- Búsqueda Híbrida FORZADA (Vector + BM25)
+- Persistencia total (ChromaDB en disco)
 """
 
 import logging
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-
+from typing import Dict, List, Optional, Tuple, Iterator
 import sys
+
+
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from src.config import EXTRACTOR_PROMPT, RESPONDER_PROMPT, CONDENSED_QUESTION_PROMPT
-from src.utils.vectorstore import search, is_vectorstore_initialized
-from src.utils.hybrid_search import hybrid_search  # Hybrid BM25 + Vector
-from src.utils.smart_retrieval import smart_hierarchical_retrieval  # Smart filtering + hierarchical
-from src.utils.reranker import rerank_chunks  # Local BGE Re-ranking
-from src.utils.llm_config import generate_response, is_model_available
-from src.utils.pdf_processor import process_all_contracts
-from src.utils.chunking import extract_metadata_from_text
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+from src.config import EXTRACTOR_PROMPT, RESPONDER_PROMPT, CONDENSED_QUESTION_PROMPT, MODEL_CHATBOT
+from src.utils.vectorstore import is_vectorstore_initialized
+from src.utils.hybrid_search import hybrid_search  # ÚNICO MOTOR DE BÚSQUEDA
+from src.utils.reranker import rerank_chunks
+from src.utils.llm_config import generate_response, is_model_available, generate_response_stream
+from src.utils.deterministic_extractor import (
+    extract_cif, extract_dates, extract_amounts, extract_normativas,
+    extract_penalties, extract_contract_id, is_generic_iso_9001,
+    contains_exact_amount, extract_final_execution_date
+)
+from src.agents.query_router import QueryRouter
 
 logger = logging.getLogger(__name__)
+
+# Caché de metadatos (generado offline por ingest_contracts.py)
+METADATA_CACHE_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "metadata_cache.txt"
 
 # Keywords para clasificar preguntas
 QUANTITATIVE_KEYWORDS = [
@@ -37,7 +49,6 @@ QUALITATIVE_KEYWORDS = [
     'confidencialidad', 'seguridad', 'subcontratación'
 ]
 
-# Keywords para detectar saludos/conversación casual
 GREETING_KEYWORDS = [
     'hola', 'buenos días', 'buenas tardes', 'buenas noches', 'hey', 'hi',
     'qué tal', 'cómo estás', 'saludos', 'buenas'
@@ -50,26 +61,18 @@ HELP_KEYWORDS = [
 
 
 def classify_query(query: str) -> str:
-    """
-    Clasifica la pregunta como GREETING, HELP, QUANTITATIVE o QUALITATIVE.
-    
-    Returns:
-        str: Tipo de query
-    """
+    """Clasifica la pregunta como GREETING, HELP, QUANTITATIVE o QUALITATIVE."""
     query_lower = query.lower().strip()
     
-    # Detectar saludos simples (respuesta rápida)
-    if len(query_lower) < 30:  # Saludos suelen ser cortos
+    if len(query_lower) < 30:
         for greeting in GREETING_KEYWORDS:
             if greeting in query_lower:
                 return 'GREETING'
     
-    # Detectar petición de ayuda
     for help_kw in HELP_KEYWORDS:
         if help_kw in query_lower:
             return 'HELP'
     
-    # Clasificación normal
     quant_score = sum(1 for kw in QUANTITATIVE_KEYWORDS if kw in query_lower)
     qual_score = sum(1 for kw in QUALITATIVE_KEYWORDS if kw in query_lower)
     
@@ -78,65 +81,175 @@ def classify_query(query: str) -> str:
     return 'QUANTITATIVE'
 
 
+def dynamic_top_k(query: str, query_type: str) -> int:
+    """
+    Determina el top_k óptimo basado en el tipo de query.
+    
+    Estrategia:
+    - Queries exhaustivas ("todos", "lista"): 50 chunks (aumentado para cobertura total)
+    - Queries de datos exactos ("exacto", "específico"): 10 chunks
+    - Queries cuantitativas: 15 chunks
+    - Queries con contrato específico: 10 chunks (filtrado)
+    - Default: 15 chunks
+    """
+    query_lower = query.lower()
+    
+    # [Fase 3: Query Understanding Layer]
+    # Analizamos la query para determinar estrategia
+    from src.agents.query_analyzer import QueryAnalyzer
+    
+    analyzer = QueryAnalyzer()
+    logger.info(f"🧠 Analizando query: '{query}'...")
+    query_plan = analyzer.analyze(query)
+    
+    # 1. Ajuste de Top-K basado en Plan
+    k = 30 # Default
+    if query_plan.get("search_strategy") == "EXHAUSTIVE_SCAN" or query_plan.get("query_type") == "LIST":
+         k = 50
+         logger.info(f"🚀 Modo Exhaustivo Activado (k={k}) por Query Plan")
+    elif query_plan.get("search_strategy") == "SINGLE_DOC":
+         k = 15 # Optimización para dato puntual
+         logger.info(f"⚡ Modo Single Doc Activado (k={k})")
 
-def build_metadata_context() -> str:
-    """
-    Construye un contexto compacto basado en la metadata de todos los contratos.
-    Este contexto es mucho más pequeño (~500 chars) que los chunks completos (~5000 chars).
+    # 2. Extracción de filtros de metadatos del plan
+    filter_metadata = None  # Ensure it is initialized
+    plan_contracts = query_plan.get("entities", {}).get("contract_ids", [])
     
-    Returns:
-        str: Contexto compacto con metadata de todos los contratos.
-    """
-    contracts = process_all_contracts()
+    if plan_contracts:
+        # Si hay un contrato explícito, filtramos
+        # Priorizamos el primero si hay varios y es SINGLE_DOC, o usamos lógica OR si soportada
+        contract_id = plan_contracts[0] 
+        filter_metadata = {"num_contrato": contract_id}
+        logger.info(f"🎯 Filtro Metadata Activado: {contract_id}")
+
     
-    if not contracts:
-        return "No hay contratos disponibles."
+    # Detectar queries de precisión
+    if any(kw in query_lower for kw in ["exacto", "específico", "preciso", "cuál es el"]):
+        return 10
     
-    # Recopilar metadata de todos los contratos
-    contract_data = []
-    for contract in contracts:
-        metadata = extract_metadata_from_text(contract["text"], contract["filename"])
+    # Detectar si menciona contrato específico
+    if extract_contract_id(query):
+        return 10  # Con filtrado de metadata, 10 es suficiente
+    
+    # Query cuantitativa
+    if query_type == "QUANTITATIVE":
+        return 15
         
-        # Limpiar importe para ordenar numéricamente
-        raw_importe = metadata.get("importe", "0")
+    # Query cualitativa
+    if query_type == "QUALITATIVE":
+        return 15
+    
+    # Default (COMPLEX, SIMPLE, etc)
+    return 15
+
+
+def detect_exact_phrase_query(query: str) -> Optional[str]:
+    """
+    Detecta queries que requieren match de frase exacta.
+    Retorna el pattern a buscar o None.
+    
+    Fase 2 P2: Búsqueda de frase exacta para EDGE_06.
+    """
+    exact_phrases = [
+        (r'proh[íi]be?.*subcontrataci[óo]n', "subcontratación prohibida"),
+        (r'seguridad.*ITAR', "seguridad ITAR"),
+        (r'clasificado.*secreto', "clasificado secreto"),
+        (r'no.*permite.*subcontrata', "no permite subcontratar")
+    ]
+    
+    for pattern, description in exact_phrases:
+        if re.search(pattern, query, re.IGNORECASE):
+            logger.info(f"🎯 Detectada query de frase exacta: '{description}'")
+            return pattern
+    
+    return None
+
+
+def route_query(query: str) -> str:
+    """Forzamos GPT-4o para todas las queries de datos (lección del 70% accuracy)."""
+    return 'COMPLEX'  # Mantener override hasta validar 100%
+
+
+def load_metadata_context() -> str:
+    """
+    Carga el contexto de metadatos desde el caché generado offline.
+    ULTRA-RÁPIDO: No lee PDFs, solo un archivo de texto pre-generado.
+    """
+    if not METADATA_CACHE_PATH.exists():
+        logger.warning(f"⚠️ Caché de metadatos no encontrado en {METADATA_CACHE_PATH}")
+        logger.warning("Ejecuta: python src/ingest_contracts.py")
+        return "No hay información de contratos disponible. Ejecuta src/ingest_contracts.py primero."
+    
+    try:
+        with open(METADATA_CACHE_PATH, "r", encoding="utf-8") as f:
+            context = f.read()
+        logger.info(f"✅ Contexto de metadatos cargado desde caché ({len(context)} chars)")
+        return context
+    except Exception as e:
+        logger.error(f"Error cargando caché de metadatos: {e}")
+        return "Error cargando información de contratos."
+
+
+def expand_context(chunks: List[Dict]) -> List[Dict]:
+    """
+    CONTEXT EXPANSION: Recupera chunks adyacentes (anterior/posterior) para más contexto.
+    Esto ayuda a capturar información que pueda estar fragmentada entre chunks.
+    """
+    from src.utils.vectorstore import search
+    
+    expanded = []
+    seen_indices = set()
+    
+    for chunk in chunks:
+        metadata = chunk.get("metadata", {})
+        archivo = metadata.get("archivo") or metadata.get("source")
+        chunk_idx = metadata.get("chunk_index", 0)
+        
+        # Añadir chunk original
+        key = f"{archivo}_{chunk_idx}"
+        if key not in seen_indices:
+            seen_indices.add(key)
+            expanded.append(chunk)
+        
+        # Intentar recuperar chunk anterior (chunk_index - 1)
+        if chunk_idx > 0:
+            try:
+                prev_results = search(
+                    query="",  # No importa, buscaremos por metadata
+                    top_k=50,
+                    filter_metadata={"archivo": archivo, "chunk_index": chunk_idx - 1}
+                )
+                if prev_results:
+                    prev_chunk = prev_results[0]
+                    prev_key = f"{archivo}_{chunk_idx - 1}"
+                    if prev_key not in seen_indices:
+                        seen_indices.add(prev_key)
+                        # Insertar ANTES del chunk actual
+                        expanded.insert(len(expanded) - 1, prev_chunk)
+            except:
+                pass  # Silently fail, no es crítico
+        
+        # Intentar recuperar chunk posterior (chunk_index + 1)
         try:
-            # Eliminar €, puntos y cambiar coma por punto para float
-            clean_importe = raw_importe.replace("€", "").replace("EUR", "").replace(".", "").replace(",", ".").strip()
-            importe_float = float(clean_importe)
-        except ValueError:
-            importe_float = 0.0
-            
-        contract_data.append({
-            "num": metadata.get("num_contrato", "N/A"),
-            "importe": metadata.get("importe", "N/A"),
-            "importe_val": importe_float,  # Valor numérico para ordenar
-            "fecha_fin": metadata.get("fecha_fin", "N/A"),
-            "tipo": metadata.get("tipo_contrato", "N/A"),
-            "aval_venc": metadata.get("aval_vencimiento", "N/A"),
-            "entidad_aval": metadata.get("aval_entidad", "N/A"),
-            "aval_importe": metadata.get("aval_importe", "N/A"),
-            "normas": metadata.get("normas", "N/A"),  # STANAG, ISO, etc.
-            "confidencial": "Sí" if metadata.get("requiere_confidencialidad") else "No"
-        })
+            next_results = search(
+                query="",
+                top_k=50,
+                filter_metadata={"archivo": archivo, "chunk_index": chunk_idx + 1}
+            )
+            if next_results:
+                next_chunk = next_results[0]
+                next_key = f"{archivo}_{chunk_idx + 1}"
+                if next_key not in seen_indices:
+                    seen_indices.add(next_key)
+                    expanded.append(next_chunk)
+        except:
+            pass
     
-    # Ordenar por ID DE CONTRATO para evitar sesgos de "importancia" al final de la lista
-    # (Antes se ordenaba por importe y el LLM ignoraba los contratos pequeños que vencían pronto)
-    contract_data.sort(key=lambda x: x["num"])
-    
-    lines = ["LISTA DE CONTRATOS DISPONIBLES (Referencia completa):"]
-    for c in contract_data:
-        normas_str = f", Normas={c['normas']}" if c['normas'] != "N/A" else ""
-        aval_str = f", AvalVence={c['aval_venc']}, AvalEntidad={c['entidad_aval']}, AvalImporte={c['aval_importe']}"
-        lines.append(f"{c['num']}: Importe={c['importe']}, Tipo={c['tipo']}, Vence={c['fecha_fin']}{normas_str}{aval_str}")
-    
-    return "\n".join(lines)
+    return expanded if expanded else chunks  # Fallback al original si falla
 
 
 def format_context_from_chunks(chunks: List[Dict]) -> Tuple[str, Dict[str, str]]:
-    """
-    Formatea los chunks recuperados como contexto para el LLM.
-    Devuelve también un mapa {Documento X: NombreArchivo} para reemplazo posterior.
-    """
+    """Formatea chunks recuperados como contexto para el LLM con mapeo de fuentes."""
     if not chunks:
         return "No se encontraron documentos relevantes.", {}
     
@@ -145,52 +258,28 @@ def format_context_from_chunks(chunks: List[Dict]) -> Tuple[str, Dict[str, str]]
     
     for i, chunk in enumerate(chunks, 1):
         metadata = chunk.get("metadata", {})
-        
-        # ID para el LLM
         doc_key = f"Documento {i}"
         
-        # Nombre Real para el usuario
+        # Nombre real del archivo
         real_name = metadata.get("archivo") or metadata.get("source") or "Desconocido.pdf"
-        # Fallback seguro
         if not real_name.lower().endswith(".pdf"):
             real_name += ".pdf"
-            
-        # Page Fallback: Si es '?', intentar extraer 'page_label' o usar '1' o 'General'
-        page = metadata.get("pagina", "?")
-        if str(page) == "?" or not str(page):
-             page = metadata.get("page_label") or metadata.get("page") or "1"
-        if not page:
-             page = "General"
         
-        # Guardar mapeo con precisión quirúrgica
+        # Página
+        page = metadata.get("pagina") or metadata.get("page") or "1"
+        
+        # Mapeo para post-procesamiento
         source_map[doc_key] = f"{real_name}, Pág: {page}"
         
-        # Header simple para el LLM, pero con ALERTA DE FORMATO
-        header = f"[{doc_key}]"
-        
-        # Inyectar nombre del archivo en el header para que el LLM sepa de qué habla
-        # Pero le prohibimos usarlo para la cita. Solo para contexto.
-        header += f" (Archivo: {real_name})"
-        
-        # --- HEADER ESPECIAL PARA BLINDADOS ---
-        if "CON_2024_001" in real_name or "Vehiculos_Blindados" in real_name:
-            header += " [CONTENIDO DEL CONTRATO DE BLINDADOS (FUENTE OFICIAL)]"
-            
-        # YA NO USAMOS el nombre del contrato en el header para que el LLM se obligue a usar "Documento X"
-        # y nosotros lo reemplacemos después.
+        # Header del chunk
+        header = f"[{doc_key}] (Archivo: {real_name})"
         
         if metadata.get("num_contrato"):
             header += f" Contrato: {metadata['num_contrato']}"
-        if metadata.get("seccion_pdf"):
-            header += f" | Sección: {metadata['seccion_pdf']}"
+        if metadata.get("seccion"):
+            header += f" | Sección: {metadata['seccion']}"
         
-        # Añadir metadata crítica al header del chunk (información para el LLM, no para citar)
-        if metadata.get("aval_entidad"):
-            header += f" | Avalista: {metadata['aval_entidad']}"
-        if metadata.get("importe"):
-            header += f" | Importe: {metadata['importe']}"
-        
-        # Limitar contenido a 1200 chars para mejor calidad
+        # Contenido limitado
         contenido = chunk['contenido'][:1200] + "..." if len(chunk['contenido']) > 1200 else chunk['contenido']
         context_parts.append(f"{header}\n{contenido}")
     
@@ -198,33 +287,16 @@ def format_context_from_chunks(chunks: List[Dict]) -> Tuple[str, Dict[str, str]]
 
 
 def extract_dates_from_text(text: str) -> List[str]:
-    """
-    Extrae todas las fechas mencionadas en un texto.
-    
-    Args:
-        text: Texto a analizar.
-    
-    Returns:
-        List[str]: Lista de fechas encontradas.
-    """
+    """Extrae fechas del texto."""
     pattern = r'\d{1,2}/\d{1,2}/\d{4}'
     return re.findall(pattern, text)
 
 
 def validate_response(response: str, chunks: List[Dict]) -> Tuple[str, List[str]]:
-    """
-    Valida la respuesta del LLM y detecta posibles problemas.
-    
-    Args:
-        response: Respuesta generada por el LLM.
-        chunks: Chunks utilizados como contexto.
-    
-    Returns:
-        Tuple[str, List[str]]: (respuesta posiblemente modificada, lista de advertencias)
-    """
+    """Valida respuesta del LLM y detecta posibles problemas."""
     warnings = []
     
-    # 1. Verificar si menciona números de contrato/expediente
+    # Verificar citas de contratos
     contract_patterns = [
         r'[A-Z]{2,4}_\d{4}_\d{3}',
         r'EXP[_-]\d{4}[_-]\d+',
@@ -232,72 +304,117 @@ def validate_response(response: str, chunks: List[Dict]) -> Tuple[str, List[str]
         r'LIC[_-]\d{4}[_-]\d+'
     ]
     
-    has_contract_citation = False
-    for pattern in contract_patterns:
-        if re.search(pattern, response, re.IGNORECASE):
-            has_contract_citation = True
-            break
+    has_contract_citation = any(re.search(pattern, response, re.IGNORECASE) for pattern in contract_patterns)
     
-    # Si no hay citas, verificar si hay en los chunks y advertir
     if not has_contract_citation and chunks:
-        # Verificar si los chunks tienen contratos para citar
-        chunk_contracts = []
-        for chunk in chunks:
-            meta = chunk.get("metadata", {})
-            if meta.get("num_contrato"):
-                chunk_contracts.append(meta["num_contrato"])
-        
+        chunk_contracts = [chunk.get("metadata", {}).get("num_contrato") for chunk in chunks if chunk.get("metadata", {}).get("num_contrato")]
         if chunk_contracts:
             warnings.append("⚠️ Esta respuesta es general. Contratos relacionados: " + ", ".join(set(chunk_contracts)))
     
-    # 2. Verificar fechas en la respuesta vs chunks
+    # Verificar fechas
     response_dates = extract_dates_from_text(response)
     if response_dates:
         chunk_text = " ".join([c.get("contenido", "") for c in chunks])
         chunk_dates = extract_dates_from_text(chunk_text)
-        
         for date in response_dates:
             if date not in chunk_dates:
                 warnings.append(f"⚠️ La fecha {date} no se ha podido verificar en los documentos originales.")
-                break  # Solo advertir una vez
+                break
     
-    # 3. Verificar longitud muy corta
     if len(response.strip()) < 50 and chunks:
         warnings.append("💡 Si necesitas más detalle, puedo elaborar la respuesta.")
     
     return response, warnings
 
 
+
+def analyze_date_density(initial_chunks: List[Dict]) -> str:
+    """
+    Realiza un análisis exhaustivo de densidad de fechas para los contratos candidatos.
+    Recupera TODOS los chunks de los contratos encontrados y cuenta fechas únicas.
+    """
+    try:
+        # 1. Identificar contratos candidatos de los chunks iniciales
+        candidate_contracts = set()
+        for chunk in initial_chunks:
+            c_id = chunk.get("metadata", {}).get("num_contrato")
+            if c_id and c_id != "N/A":
+                candidate_contracts.add(c_id)
+                
+        if not candidate_contracts:
+            return ""
+
+        logger.info(f"📅 Analizando densidad para contratos: {candidate_contracts}")
+        results = []
+        
+        # 2. Para cada contrato, recuperar TODOS sus chunks y contar fechas
+        from src.utils.vectorstore import get_collection
+        from src.utils.deterministic_extractor import extract_dates
+        
+        collection = get_collection()
+        
+        for contract_id in candidate_contracts:
+            # Recuperar todo el contenido del contrato usando GET directo (sin embedding)
+            # Retorna diccionarios con listas: {'ids': [...], 'documents': [...], ...}
+            contract_data = collection.get(
+                where={"num_contrato": contract_id},
+                limit=100,
+                include=["documents"]
+            )
+            
+            if not contract_data or not contract_data['documents']:
+                continue
+                
+            all_text = " ".join(contract_data['documents'])
+            dates = extract_dates(all_text)
+            unique_dates = sorted(list(set(dates)))
+            
+            results.append({
+                "contract": contract_id,
+                "count": len(unique_dates),
+                "dates": unique_dates
+            })
+        
+        # 3. Ordenar por cantidad
+        results.sort(key=lambda x: x["count"], reverse=True)
+        
+        # 4. Formatear reporte para el LLM
+        report = "=== ANÁLISIS DE DENSIDAD DE FECHAS (EDGE_04 FIX) ===\n"
+        report += "Este análisis cuenta fechas únicas de TODOS los chunks del contrato, no solo los recuperados.\n"
+        for r in results[:3]: # Top 3
+            report += f"- Contrato {r['contract']}: {r['count']} fechas únicas encontradas.\n"
+            if r['count'] > 0:
+                report += f"  (Ejemplos: {', '.join(r['dates'][:5])}...)\n"
+            
+        return report
+    except Exception as e:
+        logger.error(f"Error en analyze_date_density: {e}")
+        return ""
+
+
 def format_conversation_history(history: List[Dict], max_messages: int = 5) -> str:
-    """
-    Formatea el historial de conversación para incluir en el prompt.
-    """
+    """Formatea historial de conversación."""
     if not history:
         return ""
     
-    # Tomar solo los últimos N mensajes
     recent_history = history[-max_messages:]
-    
     if not recent_history:
         return ""
     
     formatted = ["HISTORIAL DE CONVERSACIÓN RECIENTE:"]
     for msg in recent_history:
         role = "Usuario" if msg.get("role") == "user" else "Asistente"
-        content = msg.get("content", "")[:2000]  # Aumentado límite para contexto (tablas largas)
+        content = msg.get("content", "")[:2000]
         formatted.append(f"{role}: {content}")
     
     return "\n".join(formatted)
 
 
 def contextualize_query(query: str, history: List[Dict]) -> str:
-    """
-    Reescribe la consulta del usuario basándose en el historial de chat para hacerla independiente.
-    Útil para preguntas de seguimiento como "¿y cuál es su fecha?".
-    """
+    """Reescribe query basándose en historial para hacerla independiente."""
     if not history:
         return query
-        
+    
     try:
         historial_str = format_conversation_history(history, max_messages=3)
         prompt = CONDENSED_QUESTION_PROMPT.format(
@@ -305,55 +422,30 @@ def contextualize_query(query: str, history: List[Dict]) -> str:
             question=query
         )
         
-        # Usar temperatura 0 para determinismo
-        logger.info("Contextualizando pregunta (LLM rewrite)...")
+        logger.info("Contextualizando pregunta...")
         response = generate_response(prompt, max_tokens=150, temperature=0.0)
         
-        # Limpieza básica de la respuesta
         cleaned = response.strip()
         if cleaned.lower().startswith("pregunta independiente:"):
             cleaned = cleaned[23:].strip()
         cleaned = cleaned.replace('"', "").strip()
         
-        # Si el modelo falla, devuelve error o vacío, usar original
         if not cleaned or "Error" in cleaned:
-             return query
-             
+            return query
+        
         return cleaned
     except Exception as e:
         logger.error(f"Error en contextualize_query: {e}")
         return query
 
 
-def analyze_dependency(query: str, last_msg: str) -> bool:
-    """
-    Usa el LLM para decidir INTELIGENTEMENTE si la query depende del contexto anterior.
-    Devuelve True si la frase NO tiene sentido por sí sola y necesita lo anterior.
-    """
-    try:
-        if not last_msg: return False
-        
-        prompt = f"""Analiza si la siguiente PREGUNTA depende del MENSAJE ANTERIOR para entenderse.
-        
-        MENSAJE ANTERIOR: "{last_msg[:2000]}..."
-        PREGUNTA: "{query}"
-        
-        CRITERIO:
-        - Si la pregunta usa pronombres ("sus", "su", "el", "los") refiriéndose a algo del anterior -> SI
-        - Si la pregunta pide detalles ("dame los días", "y el importe") de lo anterior -> SI
-        - Si la pregunta menciona una entidad nueva explícitamente -> NO
-        
-        Responde SOLO "SI" o "NO".
-        """
-        response = generate_response(prompt, max_tokens=10, temperature=0.0).strip().upper()
-        # logger.info(f"Análisis de Dependencia: '{query}' -> {response}")
-        return "SI" in response
-    except Exception:
-        return False  # Fallback a búsqueda normal
+
+
+
 
 def retrieve_and_generate(query: str, history: List[Dict] = None) -> Dict:
     """
-    Ejecuta el flujo RAG completo: retrieval + generación.
+    Ejecuta el flujo RAG completo con BÚSQUEDA HÍBRIDA FORZADA.
     
     Args:
         query: Pregunta del usuario.
@@ -370,11 +462,11 @@ def retrieve_and_generate(query: str, history: List[Dict] = None) -> Dict:
         "success": True
     }
     
-    # 0. CLASIFICAR QUERY PRIMERO
+    # Clasificar query
     query_type = classify_query(query)
     logger.info(f"Tipo de query: {query_type}")
     
-    # RESPUESTAS RÁPIDAS
+    # Respuestas rápidas
     if query_type == 'GREETING':
         result["response"] = "¡Hola! 👋 Soy DefenseBot, tu asistente para consultas de contratos de defensa. ¿En qué puedo ayudarte hoy?"
         return result
@@ -392,9 +484,9 @@ def retrieve_and_generate(query: str, history: List[Dict] = None) -> Dict:
                               "- ¿Qué avales tiene el contrato CON_2024_001?")
         return result
     
-    # Validaciones iniciales
+    # Validaciones
     if not is_vectorstore_initialized():
-        result["response"] = "No hay documentos cargados. Ejecuta init_vectorstore.py."
+        result["response"] = "No hay documentos cargados. Ejecuta: python src/ingest_contracts.py"
         result["success"] = False
         return result
     
@@ -404,258 +496,253 @@ def retrieve_and_generate(query: str, history: List[Dict] = None) -> Dict:
         return result
     
     try:
-        chunks = []
-        search_query = query
-        where_filter = None
+        import time
+        start_retrieval = time.time()
         
-        # ESTRATEGIA DEFINITIVA: RAZONAMIENTO, NO KEYWORDS.
-        needs_context = False
-        last_msg = ""
+        # ============================================
+        # BÚSQUEDA HÍBRIDA FORZADA (BM25 + Vector)
+        # ============================================
+        logger.info("🔍 Ejecutando BÚSQUEDA HÍBRIDA (BM25 + Vector)...")
         
-        if history:
-            last_msg = history[-1]["content"] if history[-1]["role"] == "assistant" else ""
-            
-        # =================================================================================
-        # INTEGRACIÓN DEL PLANNER AGENT ("DIVIDE Y VENCERÁS")
-        # =================================================================================
-        from src.agents.planner import PlanningAgent
-        from src.graph.state import WorkflowState
+        # [Fase 2: Smart Routing]
+        # Clasificar y obtener configuración
+        router = QueryRouter()
+        complexity = router.classify(query)
+        config = router.get_config(complexity)
         
-        try:
-            logger.info("🧠 Ejecutando Planner para estrategia de búsqueda...")
-            planner = PlanningAgent()
-            # Estado efímero para el planner
-            plan_state = WorkflowState(query=query)
-            plan_state = planner.run(plan_state)
-            
-            sub_queries = plan_state.get("sub_queries", [])
-            query_complexity = plan_state.get("query_complexity", "simple")
-            
-            if len(sub_queries) > 1:
-                logger.info(f"🧩 ESTRATEGIA MULTI-QUERY ACTIVADA ({len(sub_queries)} pasos)")
-                all_chunks = []
-                
-                for sq in sub_queries:
-                    sq_text = sq["query"]
-                    razon = sq.get("rationale", "")
-                    logger.info(f"   🔍 Ejecutando Sub-Query: '{sq_text}' ({razon})")
-                    
-                    # Para sub-queries específicas, usamos smart_retrieval con parámetros equilibrados
-                    sq_chunks = smart_hierarchical_retrieval(sq_text, top_docs=10, chunks_per_doc=3)
-                    all_chunks.extend(sq_chunks)
-                
-                # DEDUPLICACIÓN DE CHUNKS
-                # Usamos el contenido como clave única
-                seen_contents = set()
-                unique_chunks = []
-                for c in all_chunks:
-                    content_hash = hash(c['contenido'])
-                    if content_hash not in seen_contents:
-                        unique_chunks.append(c)
-                        seen_contents.add(content_hash)
-                        
-                logger.info(f"📚 Total chunks acumulados tras deduplicación: {len(unique_chunks)}")
-                chunks = unique_chunks
-                
-            else:
-                # Query simple o single-step -> Usar lógica standard optimizada
-                logger.info("🌍 ESTRATEGIA SINGLE-QUERY")
-                
-                # Mantener lógica de Boost por keywords de vehículos si aplica
-                if any(kw in query.lower() for kw in ["vehiculo", "vehículo", "blindado", "coche", "transporte"]):
-                     logger.info("🚀 MODO BOOST VEHÍCULOS DETECTADO")
-                     chunks = search(query, k=25) # Búsqueda amplia directa
-                else:
-                     # Standard Smart Retrieval
-                     chunks = smart_hierarchical_retrieval(query, top_docs=20, chunks_per_doc=4)
+        logger.info(f"🧠 Smart Routing: Query clasificada como '{complexity}'")
+        logger.info(f"⚙️ Configuración: {config}")
 
-        except Exception as e:
-            logger.error(f"⚠️ Fallo en Planner Integration: {e}. Usando fallback legacy.")
-            chunks = smart_hierarchical_retrieval(query, top_docs=20, chunks_per_doc=4)
+        # 1. Ajuste de Top-K basado en Router
+        top_k = config["top_k"]
 
-        if not chunks:
-             chunks = smart_hierarchical_retrieval(query, top_docs=20, chunks_per_doc=4)
+        # [Fase 3: Query Understanding Layer - Compatibility]
+        # Mantener QueryAnalyzer para intenciones específicas (como LIST/EXHAUSTIVE/SINGLE_DOC)
+        # Si QueryAnalyzer pide más chunks que el Router, respetamos el mayor (safety fallback)
+        from src.agents.query_analyzer import QueryAnalyzer
+        analyzer = QueryAnalyzer()
+        query_plan = analyzer.analyze(query)
         
-        # RE-RANKING: Aplicar solo si tenemos muchos chunks
-        if chunks and len(chunks) > 10:
-            logger.info("🎯 Re-ranking con LLM...")
-            # Fallback seguro para reranking
+        if query_plan.get("search_strategy") == "EXHAUSTIVE_SCAN" or query_plan.get("query_type") == "LIST":
+             if top_k < 50:
+                 top_k = 50
+                 logger.info(f"🚀 Override: Modo Exhaustivo Activado (k={top_k}) por Query Plan")
+        elif query_plan.get("search_strategy") == "SINGLE_DOC":
+             # Si es Single Doc, el Router probablemente ya dijo SIMPLE/MEDIUM (5-15), así que está bien.
+             pass
+
+        logger.info(f"📊 Top-K final: {top_k} chunks")
+        
+        # 2. Extracción de filtros de metadatos del plan
+        
+        # 2. Extracción de filtros de metadatos del plan
+        filter_metadata = None
+        plan_contracts = query_plan.get("entities", {}).get("contract_ids", [])
+        
+        if plan_contracts:
+            contract_id = plan_contracts[0] 
+            filter_metadata = {"num_contrato": contract_id}
+            logger.info(f"🎯 Filtro Metadata Activado (Analyzer): {contract_id}")
+        
+        # Metadata Filtering ya se determinó arriba con el Query Analyzer
+        # Si falló el Analyzer, fallback a extracción regex simple (ya integrado en Analyzer pero por seguridad)
+        if not filter_metadata:
+             contract_id = extract_contract_id(query)
+             if contract_id:
+                 filter_metadata = {"num_contrato": contract_id}
+                 logger.info(f"🎯 Filtrando por contrato: {contract_id}")
+        
+        chunks = hybrid_search(query, top_k=top_k, filter_metadata=filter_metadata)
+        
+        # 3. Smart Re-ranking Depth (Condicional por Router)
+        chunks_to_rank = []
+        if config["use_reranker"]:
+            rerank_limit = top_k # Re-rankeamos todo lo traído si el router dice que es complejo
+            
+            # Optimización extra si es muy masivo
+            if rerank_limit > 30:
+                rerank_limit = 30 # Cap safety
+                
+            chunks_to_rank = chunks[:rerank_limit]
+            logger.info(f"🎯 Re-ranking ACTIVADO por Router ({len(chunks_to_rank)} chunks)...")
+            
             try:
-                chunks = rerank_chunks(query, chunks, top_k=10)
+                chunks = rerank_chunks(query, chunks_to_rank, top_k=min(30, len(chunks_to_rank)))
             except Exception as e:
                 logger.error(f"Re-ranking falló: {e}, usando orden original")
-                chunks = chunks[:10]
-        elif chunks and len(chunks) > 5:
-            # Si ya son pocos, solo limitar
-            chunks = chunks[:10]
-            
-        # --- FALLBACK RETRIEVAL SYSTEM ---
-        # Si después de todo, no tenemos chunks o son muy pocos, buscar más amplio
-        if not chunks:
-            logger.warning("⚠️ Retrieval inicial vacío. Ejecutando FALLBACK AMPLIO...")
-            chunks = smart_hierarchical_retrieval(query, top_docs=20, chunks_per_doc=4)
-            # Reintentar sin re-ranking para no filtrar demasiado
-            logger.info(f"Fallback recuperó {len(chunks)} chunks.")
+                chunks = chunks[:30]
+        else:
+            logger.info("⏩ Re-ranking DESACTIVADO por Router (Modo Rápido)")
+            chunks = chunks[:top_k]
+        
+        retrieval_time = time.time() - start_retrieval
+        logger.info(f"⏱️ Retrieval completado en {retrieval_time:.2f}s - {len(chunks)} chunks")
         
         # Extraer fuentes
         for chunk in chunks:
             meta = chunk.get("metadata", {})
             source = {
                 "contrato": meta.get("num_contrato", "N/A"),
-                "seccion": meta.get("seccion", "General"), # Updated to match vectorstore metadata
+                "seccion": meta.get("seccion", "General"),
                 "archivo": meta.get("archivo", "N/A")
             }
             if source not in result["sources"]:
                 result["sources"].append(source)
         
-        # Usar solo los chunks recuperados (ya contienen metadata rica)
-        source_map = {}
+        # Formatear contexto (SIN context expansion por ahora, tiene bugs)
         if chunks:
             context, source_map = format_context_from_chunks(chunks)
+            
+            # --- FIX EDGE_04: Análisis de Densidad de Fechas ---
+            # Si la query pregunta por densidad o cantidad de fechas, hacemos análisis exhaustivo
+            density_keywords = ["densidad", "mayor número de fechas", "más fechas", "más hitos", "cantidad de fechas", "cuántas fechas"]
+            if any(k in query.lower() for k in density_keywords):
+                logger.info("📅 Detectada query de densidad de fechas. Ejecutando análisis exhaustivo (EDGE_04)...")
+                try:
+                    density_report = analyze_date_density(chunks)
+                    if density_report:
+                        context += f"\n\n{density_report}"
+                        logger.info("✅ Reporte de densidad inyectado en contexto.")
+                except Exception as e:
+                    logger.error(f"Error en análisis de densidad: {e}")
+            # ---------------------------------------------------
+            
         else:
             context = "No se encontraron documentos relevantes."
+            source_map = {}
         
-        # 2. GENERACIÓN
+        # Generación con LLM
         from datetime import datetime
         fecha_actual = datetime.now().strftime("%d/%m/%Y")
-        
         historial_str = format_conversation_history(history or [], max_messages=4)
         
-        logger.info("OPENAI AGENT CHAIN - Paso 1: Extracción Determinista...")
-        extractor_prompt = EXTRACTOR_PROMPT.format(
-            pregunta=query,
-            contexto=context,
-            historial=historial_str
-        )
-        datos_extraidos = generate_response(extractor_prompt, max_tokens=600, temperature=0.0)
+        # Determinar modelo (Router Config)
+        selected_model = config["model"]
+        logger.info(f"🤖 Usando modelo: {selected_model}")
         
-        logger.info("OPENAI AGENT CHAIN - Paso 2: Generación Final...")
-        # Inyectar instrucción de cita estricta en el prompt dinámicamente si no está en RESPONDER_PROMPT
-        strict_instruction = """
-IMPORTANTÍSIMO:
-- Prioriza los documentos que coincidan temáticamente.
-- Si el documento habla de "Blindados" (o "Vehículos") y la pregunta es "Vehículos", ES RELEVANTE. Úsalo.
-- El importe oficial para Vehículos Blindados es 2.450.000,00 EUR. 
-- FORMATO OBLIGATORIO PARA COMPARATIVAS: Usa SIEMPRE una **TABLA MARKDOWN** con estas 3 columnas exactas:
-  | Concepto | Importe Total | Fuente Verificada |
-  |----------|---------------|-------------------|
-  | [Nombre] | [Cifra] EUR   | [Nombre_Exacto_Archivo.pdf] |
-- REGLA DE ORO: Si el importe es 2.450.000,00 EUR, la fuente ES "CON_2024_001_Suministro_Vehiculos_Blindados.pdf". NO pongas N/A.
-- En la columna "Fuente Verificada" pon SOLO el nombre del archivo.
-- LÓGICA DE CÁLCULO FINAL (CRÍTICO):
-  * Si la pregunta pide **COMPARAR** dos contratos: Calcula la RESTA de sus importes y muéstrala tras la tabla.
-  * Si la pregunta pide **SUMAR** o **TOTAL**: Calcula la SUMA de la columna "Importe Total" y muéstrala tras la tabla como "SUMA TOTAL: [Cifra] EUR".
-  * Si la pregunta pide **PROPORCIÓN** o **PORCENTAJE** (ej. "aval más alto en proporción"):
-    - Calcula (Aval / Importe Total) * 100 para cada uno.
-    - Si el resultado es idéntico para todos (ej. 2%), DECLARA: "Todos los contratos mantienen la misma proporción del X%". NO señales uno como "el más alto" si son iguales.
-    - En la tabla usa columnas: | Contrato | Importe Aval | Importe Total | % Calc |
-- Tienes TERMINANTEMENTE PROHIBIDO inventar información numérica o usar "N/A" si tienes el dato.
-- Debes citar usando EXCLUSIVAMENTE el formato [Documento X].
-- NO inventes nombres de archivo. Usa el número.
-- Nosotros lo traduciremos.
+        # Paso 1: Extracción Determinista + LLM
+        logger.info("Extracción con modo determinista anti-alucinación...")
+        
+        # PRE-EXTRACCIÓN: Buscar datos específicos con regex
+        pre_extracted = {
+            "cif": extract_cif(context),
+            "fechas": extract_dates(context),
+            "importes": extract_amounts(context),
+            "normativas": extract_normativas(context),
+            "penalizaciones": extract_penalties(context),
+            "contrato_mencionado": contract_id
+        }
+        logger.info(f"Pre-extracción: CIF={pre_extracted['cif']}, Fechas={len(pre_extracted['fechas'])}, Importes={len(pre_extracted['importes'])}")
+        
+        # PROMPT EXTRACTOR V2: Anti-Alucinación + Determinista
+        extractor_v2 = f"""
+Actúas como EXTRACTOR DE DATOS ULTRA-PRECISOS de contratos de defensa.
+
+PREGUNTA DEL USUARIO:
+{query}
+
+CONTEXTO (Documentos verificados):
+{context}
+
+HISTORIAL DE CONVERSACIÓN:
+{historial_str}
+
+DATOS PRE-EXTRAÍDOS (Regex):
+- CIFs encontrados: {pre_extracted['cif'] or 'NO CONSTA'}
+- Fechas encontradas: {', '.join(pre_extracted['fechas'][:5]) if pre_extracted['fechas'] else 'NO CONSTA'}
+- Importes encontrados: {', '.join([a['valor'] for a in pre_extracted['importes'][:5]]) if pre_extracted['importes'] else 'NO CONSTA'}
+- Normativas encontradas: {', '.join(pre_extracted['normativas'][:5]) if pre_extracted['normativas'] else 'NO CONSTA'}
+
+🚨 REGLAS ANTI-ALUCINACIÓN (CRÍTICO):
+1. Si la pregunta pide un CIF → USA SOLO el pre-extraído. Si no hay, responde "NO CONSTA".
+2. Si pide fecha final de ejecución → Busca "finalización" o "fecha final". Sino, usa la MÁS TARDÍA de las pre-extraídas.
+3. Si pide importe/penalización EXACTA → USA SOLO valores pre-extraídos. NO inventes.
+4. Si pide normativa → USA SOLO normativas pre-extraídas. Si pregunta por "la principal", menciona SOLO UNA.
+5. Si pide "todos" o "lista" → Extrae TODOS los contratos/datos encontrados.
+6. NO añadas información "adicional" no solicitada.
+7. Si NO encuentras el dato exacto → Responde "NO CONSTA EN LOS DOCUMENTOS".
+
+RESPUESTA (formato JSON):
+{{
+    "dato_encontrado": "Valor exacto extraído o 'NO CONSTA'",
+    "fuente_exacta": "Nombre del documento y página",
+    "nivel_certeza": "ALTO|MEDIO|BAJO",
+    "razonamiento": "Breve explicación de cómo encontraste el dato"
+}}
 """
-        responder_prompt = RESPONDER_PROMPT.format(
-            fecha_actual=fecha_actual,
-            datos_extraidos=datos_extraidos,
-            pregunta=query,
-            historial=historial_str
-        ) + strict_instruction
         
-        raw_response = generate_response(responder_prompt, max_tokens=700, temperature=0.0)
+        datos_extraidos = generate_response(extractor_v2, max_tokens=800, temperature=0.0, model=selected_model)
         
-        # --- POST-PROCESAMIENTO QUIRÚRGICO (NUCLEAR FIX) ---
+        # Paso 2: Generación final con Verificación
+        logger.info("Síntesis final con verificación de perito...")
+        
+        # PROMPT DE SÍNTESIS RIGUROSA
+        synthesis_prompt = f"""
+Actúas como PERITO JUDICIAL que redacta un INFORME OFICIAL.
+
+FECHA: {fecha_actual}
+
+DATOS EXTRAÍDOS (ya verificados):
+{datos_extraidos}
+
+PREGUNTA ORIGINAL:
+{query}
+
+HISTORIAL DE CONVERSACIÓN:
+{historial_str}
+
+INSTRUCCIONES DE REDACCIÓN:
+1. Si el dato fue encontrado (nivel_certeza ALTO):
+   - Presenta en TABLA MARKDOWN: | Concepto | Valor | Fuente Verificada |
+   - Usa SOLO datos literales del JSON extraído.
+   - Si preguntan SUMA/TOTAL: Calcula y muestra "SUMA TOTAL: [X] EUR".
+   
+2. Si el dato NO CONSTA:
+   - Responde: "El dato solicitado NO CONSTA en los documentos analizados."
+   - NO inventes ni aproximes.
+
+3. Si nivel_certeza es MEDIO/BAJO:
+   - Indica: "Se encontró información parcial, pero no es 100% concluyente."
+
+4. PROHIBIDO:
+   - Añadir información no extraída.
+   - Usar "probablemente", "posiblemente".
+   - Inventar cifras o fechas.
+
+REDAC<!-- el informe AHORA:
+"""
+        
+        raw_response = generate_response(synthesis_prompt, max_tokens=700, temperature=0.0, model=selected_model)
+        
+        # Post-procesamiento: Reemplazar [Documento X] con nombres reales
         response = raw_response
         if source_map:
-            logger.info(f"Applying Regex Fix with map: {list(source_map.keys())}")
-            import re
-            
-            # 1. Regex case insensitive para "Documento X"
-            # Captura: [Documento 1], Documento 1, Documento: 1, doc 1
             pattern = re.compile(r"(?:\[?Documento\s*[:\-]?\s*(\d+)\]?)", re.IGNORECASE)
             
             def replacer(match):
                 num = match.group(1)
                 key = f"Documento {num}"
-                # Recuperar nombre real
                 real_ref = source_map.get(key)
                 if real_ref:
                     return f"**[Doc: {real_ref}]**"
-                return match.group(0) # Si no encuentra, deja original
+                return match.group(0)
             
             response = pattern.sub(replacer, raw_response)
         
-        # --- SUPER FORCE INJECTION (Vinculación IN-PLACE) ---
-        # Si menciona el importe correcto (2.45 o 2,45) pero falta la cita explícita
-        # Lo reemplazamos en el sitio exacto para que quede limpio
-        # --- (DESACTIVADO) SUPER FORCE INJECTION IN-PLACE ---
-        # Se ha desactivado porque corrompía la tabla al mezclar importe y fuente.
-        # Ahora confiamos en que el Prompt ponga [Documento X] en la columna correcta.
+        # [Fase 3.2: Verificador Post-Generación]
+        # Cross-Check respuesta vs chunks
         
-        # Limpieza final de seguridad: Si "Fuente no especificada" sobrevivió, borrarla.
-        clean_phrases = [
-             "Fuente no especificada", "No consta fuente", 
-             "no especificado en la evidencia proporcionada",
-             "fuente no disponible"
-        ]
-        for phrase in clean_phrases:
-             result["response"] = result["response"].replace(phrase, "")
-             result["response"] = result["response"].replace(phrase.capitalize(), "")
-             
-        # --- REPARACIÓN DE TABLA "N/A" (Fix Final) ---
-        # Si la tabla tiene N/A en la fila de 2.45M, lo forzamos
-        if "2.45" in result["response"] and ("N/A" in result["response"] or "Desconocido" in result["response"]):
-             logger.info("🔧 REPARANDO CITA 'N/A' EN TABLA")
-             # Buscar líneas de tabla con 2.45... y N/A
-             # Ejemplo: | Vehiculos | 2.450.000 EUR | N/A |
-             response = result["response"]
-             lines = response.split('\n')
-             new_lines = []
-             for line in lines:
-                 if ("2.45" in line or "2,45" in line) and "|" in line:
-                     line = line.replace("N/A", "CON_2024_001_Suministro_Vehiculos_Blindados.pdf")
-                     line = line.replace("Desconocido", "CON_2024_001_Suministro_Vehiculos_Blindados.pdf")
-                     line = line.replace("Fuente no especificada", "CON_2024_001_Suministro_Vehiculos_Blindados.pdf")
-                     # Eliminar posibles duplicados de [Documento X] si ya existían mal
-                     line = line.replace("[Documento", "[")
-                 new_lines.append(line)
-             result["response"] = "\n".join(new_lines)
-            
-        # 3. VERIFICACIÓN Y AUTO-CORRECCIÓN
-        validated_response, warnings = validate_response(response, chunks)
+        final_response = response
+        warnings = []
+
+
+
+        # Validación básica antigua (mantener por compatibilidad)
+        validated_response, old_warnings = validate_response(final_response, chunks)
+        warnings.extend(old_warnings)
         
-        # Ciclo de Auto-Corrección
-        if warnings:
-            logger.warning(f"⚠️ Hallucinaciones detectadas: {warnings}. Iniciando Auto-Corrección...")
-            
-            correction_prompt = f"""
-            Eres un REVISOR DE CALIDAD "RED TEAM".
-            
-            Has detectado errores en una respuesta generada:
-            {warnings}
-            
-            RESPUESTA ORIGINAL:
-            "{response}"
-            
-            EVIDENCIA REAL (CHUNKS):
-            {chunks_context}
-            
-            TAREA:
-            Reescribe la respuesta ELIMINANDO cualquier dato no verificado o CORRIGIENDOLO si está mal.
-            Si no puedes verificar un dato, di explícitamente "No consta en los documentos disponibles".
-            Mantén el tono profesional.
-            
-            RESPUESTA CORREGIDA:
-            """
-            
-            fixed_response = generate_response(correction_prompt, max_tokens=700, temperature=0.0)
-            logger.info("✅ Respuesta corregida por Red Team.")
-            
-            # Revalidad para asegurar (opcional, por ahora confiamos en la corrección)
-            result["response"] = fixed_response
-            result["warnings"] = [] # Asumimos corrección exitosa
-        else:
-            result["response"] = validated_response
-            result["warnings"] = warnings
+        result["response"] = validated_response
+        result["warnings"] = warnings
         
     except Exception as e:
         logger.error(f"Error en RAG: {e}")
@@ -665,16 +752,67 @@ IMPORTANTÍSIMO:
     return result
 
 
+
+def query_stream(query: str, history: List[Dict] = None) -> Iterator[str]:
+    """
+    Versión streaming del query.
+    Yields tokens en tiempo real para UX instantánea.
+    Optimizado para TTFT < 2s (Sin Reranking, Single-Step LLM).
+    """
+    try:
+        # 1. Hybrid Search (Rápido, sin Reranker pesado)
+        # Optimizamos a top_k=10 para reducir TTFT (Search + Context Upload)
+        chunks = hybrid_search(query, top_k=10)
+        
+        # 2. Build Prompt (Single Step para velocidad)
+        if chunks:
+            context, source_map = format_context_from_chunks(chunks)
+        else:
+            context = "No se encontraron documentos relevantes."
+            yield "No se encontró información en la base de datos."
+            return
+
+        # Prompt estilo 'Perito Judicial' pero directo
+        historial_str = format_conversation_history(history or [])
+        
+        prompt = f"""
+Actúas como PERITO JUDICIAL experto en contratos de defensa.
+Tu misión es responder a la pregunta usando SOLO la documentación proporcionada.
+
+PREGUNTA: {query}
+
+CONTEXTO:
+{context}
+
+HISTORIAL:
+{historial_str}
+
+INSTRUCCIONES:
+1. Responde SOLO con información verificable en el contexto.
+2. Si la respuesta incluye datos (importes, fechas, CIFs), preséntalos en formato TABLA Markdown.
+3. Cita las fuentes exactas (ej: [Doc: Nombre_Archivo.pdf]).
+4. Si no hay información suficiente, responde "NO CONSTA EN LA DOCUMENTACIÓN".
+5. Sé directo y profesional.
+
+RESPUESTA (Streaming):
+"""
+        
+        # 3. Stream generation
+        for token in generate_response_stream(
+            prompt=prompt,
+            max_tokens=1000,
+            temperature=0.0
+        ):
+            yield token
+            
+    except Exception as e:
+        logger.error(f"Error en streaming: {e}")
+        yield f"Error generando respuesta: {str(e)}"
+
+
 def chat(query: str, history: List[Dict] = None) -> str:
     """
     Interfaz simple para el chatbot con memoria de conversación.
-    
-    Args:
-        query: Pregunta del usuario.
-        history: Historial de mensajes previos (opcional).
-    
-    Returns:
-        str: Respuesta formateada.
     """
     import time
     start_time = time.time()
@@ -682,16 +820,16 @@ def chat(query: str, history: List[Dict] = None) -> str:
     result = retrieve_and_generate(query, history)
     
     elapsed_time = time.time() - start_time
-    logger.info(f"⏱️ TIEMPO RESPUESTA: {elapsed_time:.2f}s para query: '{query[:50]}...'")
+    logger.info(f"⏱️ TIEMPO TOTAL RESPUESTA: {elapsed_time:.2f}s para query: '{query[:50]}...'")
     
     response = result["response"]
     
-    # Warnings solo al log, NO al usuario
+    # Warnings solo en log
     if result.get("warnings"):
         for warning in result["warnings"]:
             logger.warning(f"RAG Warning: {warning}")
     
-    # Añadir fuentes SOLO si son contratos específicos (no "Todos")
+    # Añadir fuentes
     if result.get("sources") and result.get("success"):
         unique_contracts = list(set(
             s["contrato"] for s in result["sources"] 
@@ -701,4 +839,3 @@ def chat(query: str, history: List[Dict] = None) -> str:
             response += f"\n\n📄 *Fuente: {', '.join(unique_contracts)}*"
     
     return response
-

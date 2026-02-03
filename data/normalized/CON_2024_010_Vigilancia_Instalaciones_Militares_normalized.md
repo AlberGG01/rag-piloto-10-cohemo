@@ -1,0 +1,93 @@
+## ─── METADATA GLOBAL ───
+
+- **Expediente:** CON_2024_010
+- **Contratista:** Securitas Defensa S.A.
+- **CIF/NIF Contratista:** A-28011231
+- **Importe Total:** 2.100.000,00 EUR
+- **Fecha Inicio:** 02/10/2025
+- **Fecha Fin:** 02/10/2026
+- **Entidad Avalista:** Kutxabank
+- **Número de Aval:** AV-2024-1010
+- **Normativas Aplicables:**
+  - UNE-EN ISO 18788
+  - Ley 5/2014 Seguridad Privada
+  - CCN-STIC
+
+## ─── OBJETO DEL CONTRATO ───
+
+Prestación de servicios de vigilancia armada y seguridad privada en instalaciones militares del Mando de Canarias, incluyendo control de accesos, rondas perimetrales, videovigilancia y respuesta ante incidentes. El presente contrato tiene carácter administrativo especial y se regirá por las cláusulas contenidas en el mismo, por el Pliego de Cláusulas Administrativas Particulares y el Pliego de Prescripciones Técnicas, y supletoriamente por la Ley 9/2017 de Contratos del Sector Público y demás normativa de aplicación.
+
+## ─── GARANTÍAS Y AVALES ───
+
+- **Garantía definitiva:** 42.000,00 EUR
+- **Porcentaje sobre importe:** 2.0%
+- **Tipo de garantía:** Aval bancario
+- **Entidad avalista:** Kutxabank
+- **Número de aval:** AV-2024-1010
+- **Fecha de vencimiento del aval:** 01/11/2026
+
+## ─── HITOS Y CALENDARIO ───
+
+| Hito                                | Fecha       | Descripción                          |
+|-------------------------------------|-------------|--------------------------------------|
+| Fecha de firma                      | 22/09/2025  |                                      |
+| Fecha de inicio de ejecución        | 02/10/2025  |                                      |
+| Fecha de finalización               | 02/10/2026  |                                      |
+| Plazo de ejecución                  | 365 días naturales |                              |
+| Inicio servicio Fase 1              | 12/10/2025  | CUMPLIDO                             |
+| Ampliación a instalaciones adicionales | 21/03/2026  | PENDIENTE                            |
+
+## ─── CONDICIONES TÉCNICAS ───
+
+- **Normativas y Certificaciones:**
+  - UNE-EN ISO 18788
+  - Ley 5/2014 Seguridad Privada
+  - CCN-STIC
+
+## ─── IMPORTE Y CONDICIONES ECONÓMICAS ───
+
+- **Importe total (IVA incluido):** 2.100.000,00 EUR
+- **Base imponible:** 1.735.537,19 EUR
+- **IVA (21%):** 364.462,81 EUR
+- **Forma de pago:** Certificaciones mensuales contra factura conformada
+- **Revisión de precios:** Sí - Según fórmula polinómica del PCAP
+
+## ─── CLAUSULAS ESPECIALES ───
+
+- **Clasificación de seguridad:** CONFIDENCIAL
+- **Cláusula de confidencialidad:** Todo el personal del contratista que participe en la ejecución del contrato deberá disponer de Habilitación Personal de Seguridad (HPS) de grado CONFIDENCIAL como mínimo. El contratista deberá disponer de Habilitación de Seguridad de Empresa (HSEM) vigente expedida por la Oficina Nacional de Seguridad (ONS). La información clasificada se tratará conforme a la Ley 9/1968 de Secretos Oficiales y la normativa de protección de información clasificada de la OTAN.
+- **Penalización por incumplimiento:** 2.000 EUR por cada incidencia grave de seguridad
+- **Modificación de cantidades:** Permitida hasta +20% por ampliación de instalaciones
+- **Subcontratación:** No permitida
+
+## ─── OBLIGACIONES DEL CONTRATISTA ───
+
+1. Ejecutar el contrato conforme a las condiciones establecidas en los pliegos.
+2. Comunicar cualquier incidencia que pueda afectar al cumplimiento del contrato.
+3. Mantener durante toda la ejecución las condiciones de solvencia exigidas.
+4. Guardar sigilo sobre la información a la que tenga acceso.
+5. Abonar las indemnizaciones por daños a terceros que se produzcan.
+6. Facilitar las inspecciones y auditorías del órgano de contratación.
+
+## ─── FACULTADES DE LA ADMINISTRACIÓN ───
+
+La Administración ostenta las siguientes prerrogativas en relación con el contrato:
+- Interpretación del contrato.
+- Resolución de las dudas que ofrezca su cumplimiento.
+- Modificación del contrato por razones de interés público.
+- Acordar la resolución del contrato y determinar sus efectos.
+- Establecer penalidades por incumplimiento.
+
+## ─── CAUSAS DE RESOLUCIÓN ───
+
+Serán causas de resolución del contrato, además de las previstas en la LCSP:
+1. El incumplimiento de las obligaciones esenciales del contrato.
+2. La demora superior a 30 días en el inicio de la ejecución.
+3. El incumplimiento reiterado de los plazos parciales.
+4. La pérdida de la habilitación de seguridad del contratista.
+5. La cesión o subcontratación no autorizada.
+6. La declaración de concurso o insolvencia del contratista.
+
+## ─── JURISDICCIÓN COMPETENTE ───
+
+El orden jurisdiccional contencioso-administrativo será el competente para resolver las controversias que surjan entre las partes en relación con la preparación, adjudicación, efectos, cumplimiento y extinción del presente contrato. Con sometimiento expreso a los Juzgados y Tribunales de Madrid capital.

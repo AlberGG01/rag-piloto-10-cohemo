@@ -23,7 +23,11 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 # Modelos OpenAI
 MODEL_NORMALIZER = os.getenv("MODEL_NORMALIZER", "gpt-4o")
 MODEL_CHATBOT = os.getenv("MODEL_CHATBOT", "gpt-4o")  # Upgraded from gpt-4o-mini for precision
+MODEL_FAST = os.getenv("MODEL_FAST", "gpt-4o-mini")  # For simple queries
 MODEL_EMBEDDINGS = os.getenv("MODEL_EMBEDDINGS", "text-embedding-3-large")
+
+from openai import OpenAI
+CLIENT = OpenAI(api_key=OPENAI_API_KEY)
 
 # ============================================
 # CONFIGURACIÓN DE CHROMADB
@@ -121,6 +125,9 @@ Responder a la pregunta del usuario utilizando la evidencia recolectada.
 - Utiliza negritas para resaltar importes y nombres clave.
 - Sé profesional, directo y utiliza lenguaje militar/corporativo ("Se ha identificado", "Informe de situación").
 
+**CRÍTICO - EXHAUSTIVIDAD EN LISTAS:**
+Si la pregunta pide "todos" o "lista los contratos que...", DEBES incluir TODOS los contratos encontrados en la evidencia SIN OMITIR NINGUNO. Verifica tu respuesta para asegurar completitud antes de finalizar.
+
 Si la evidencia dice "Banco Santander" y un importe, RELACIONALOS.
 No digas "No se encontró información" si hay evidencia clara en el reporte del analista.
 
@@ -150,3 +157,16 @@ def ensure_directories():
 
 # Ejecutar al importar
 ensure_directories()
+
+# ============================================
+# CONFIGURACIÓN DEL VERIFIER
+# ============================================
+# Configuración granular del Verifier
+ENABLE_VERIFIER = False  # ❌ Desactivado por regresión severa (25% accuracy)
+
+# Configuración de complejidad (para futura fase de Smart Routing)
+VERIFIER_CONFIG = {
+    "SIMPLE": False,    # CIFs, fechas únicas → Skip verifier (confianza alta)
+    "MEDIUM": False,    # Búsquedas normales → Skip verifier (por ahora)
+    "COMPLEX": True     # Agregaciones, comparativas → Usar verifier
+}

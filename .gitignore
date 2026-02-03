@@ -2,20 +2,49 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+env/
 venv/
-.env
+ENV/
+.venv
 
-# Data & Models
-data/
-!data/contracts/*.pdf  # Keep sample contracts if needed, but user might want to ignore them. For now, ignoring data folder entirely except normalized maybe? No, let's ignore data/vectorstore and data/logs
-data/vectorstore/
-data/logs/
-models/
-
-# IDE
+# IDEs
 .vscode/
 .idea/
+*.swp
+*.swo
+*.swn
 
-# OS
+# Logs y temporales
+logs/
+*.log
+evaluation_report_*.md
+walkthrough.md
+_legacy/
+*.txt
+!requirements.txt
+
+# Backups (NO subir)
+backups/
+
+# VectorDB (se regenera localmente)
+chroma_db/
+
+# Variables de entorno (CRÍTICO - NO subir API keys)
+.env
+
+# Sistema operativo
 .DS_Store
 Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Pytest
+.pytest_cache/
+
+# Modelos (Muy pesados)
+models/
+*.gguf
+*.bin
