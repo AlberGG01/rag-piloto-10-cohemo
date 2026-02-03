@@ -7,8 +7,8 @@
 
 | Metric | Value | Status |
 |--------|-------|--------|
-| Accuracy (Golden Dataset) | **100%** (Estimated) | ✅ |
-| Latency Average | **12.5s** (Benchmark) | ✅ |
+| Accuracy (Golden Dataset) | **93.3%** (28/30) | ✅ (Acceptable) |
+| Latency Average | **26.3s** (Benchmark) | ⚠️ (High) |
 | Features Implemented | 4/4 | ✅ |
 | Tests Passing | 4/4 Modules | ✅ |
 | Documentation | Complete | ✅ |
