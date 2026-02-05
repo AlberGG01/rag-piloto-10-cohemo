@@ -100,3 +100,8 @@ def process_contract_for_ingestion(pdf_path: Path) -> List[Dict[str, Any]]:
         })
         
     return processed_data
+
+
+def get_contracts_count() -> int:
+    """Devuelve el número total de contratos disponibles."""
+    return len(get_all_contracts(use_normalized=False))
