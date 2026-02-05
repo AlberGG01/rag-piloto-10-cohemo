@@ -37,7 +37,7 @@ def get_openai_client() -> OpenAI:
 
 def generate_response(
     prompt: str,
-    max_tokens: int = 700,
+    max_tokens: int = 4096,
     temperature: float = 0.0,
     model: str = MODEL_CHATBOT
 ) -> str:
@@ -71,7 +71,7 @@ def generate_response(
 
 def generate_response_stream(
     prompt: str,
-    max_tokens: int = 700,
+    max_tokens: int = 4096,
     temperature: float = 0.0,
     model: str = MODEL_CHATBOT
 ) -> "Iterator[str]":
