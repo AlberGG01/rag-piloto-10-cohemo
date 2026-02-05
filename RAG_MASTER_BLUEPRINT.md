@@ -81,7 +81,7 @@ Para queries complejas ("Compara los plazos de Retamares vs IVECO"):
 Módulo `src/utils/answer_validator.py` que implementa validación multi-capa:
 1.  **Integridad Numérica:** Verifica que cada cifra en la respuesta exista en los chunks recuperados.
 2.  **Lógica:** Previene contradicciones obvias.
-3.  **Citas:** Verifica formato básico de fuentes.
+3.  **Citas:** Verifica formato básico de fuentes con un **umbral del 80%** (permite up to 1/5 uncited statements). Ignora metadatos.
 
 ### 4.5 Confidence Scoring System
 Sistema de scoring 0-100% basado en:
@@ -90,11 +90,30 @@ Sistema de scoring 0-100% basado en:
 *   **Specificity (20%):** Penalización a respuestas genéricas.
 *   **Validation (25%):** Resultado del Answer Validator.
 
-### 4.6 Citation Engine
-Motor de citación granular (`src/utils/citation_engine.py`) que:
-*   Fuerza citación inline para: Importes, Fechas, CIFs, Normativas.
-*   Detecta contradicciones entre documentos (Disclaimer: "Existe discrepancia").
-*   Genera listado exacto de fuentes consultadas.
+### 4.6 Citation Engine (Granular Source Tracking)
+
+### 4.6.1 Responsabilidades
+
+El Citation Engine tiene UNA responsabilidad:
+- **Generar respuestas con citaciones inline** usando prompt especializado
+
+**NO tiene:**
+- ❌ Validación de calidad (delegada a Answer Validator)
+- ❌ Generación de advertencias (delegada a Answer Validator)
+
+### 4.6.2 Separación de Responsabilidades
+Citation Engine:
+└─ Genera respuesta con [Fuente: ...] inline
+
+Answer Validator:
+├─ Valida integridad numérica
+├─ Valida coherencia lógica
+└─ Valida cobertura de citación ← AQUÍ se muestran warnings
+
+**Razón del diseño:**
+- Evita advertencias duplicadas
+- UI limpia (warnings solo en panel de validación)
+- Separación clara de concerns
 
 ---
 
@@ -406,6 +425,452 @@ def generate_response_stream(prompt, model):
  
  
  
+
+## 15. SCALABILITY ROADMAP (Escalabilidad Futura)
+
+### 15.1 Estado Actual del Sistema
+
+**Diseño actual:** Optimizado para 20-50 contratos
+**Arquitectura:** Single-pass retrieval con generación directa
+**Performance actual:**
+- Latencia: ~10-15s (queries complejas)
+- Recall: 95% (19/20 en queries agregativas)
+- Accuracy: 100% (validación rigurosa)
+- Coste: ~$0.004 por query
+
+**Límites del diseño actual:**
+- max_tokens: 4096 → Cubre ~25 contratos en una respuesta
+- k adaptativo: 50 chunks → Recupera ~30-40 contratos únicos
+- Context window: Procesa todos los chunks en una pasada
+
+---
+
+### 15.2 Umbrales de Escalabilidad
+
+#### **UMBRAL 1: 20-60 contratos (Approach Actual - VIGENTE)**
+
+**Acciones:** Ninguna
+**Configuración:**
+```python
+# rag_agent.py
+k = 50 if is_aggregative else 15
+max_tokens = 4096
+```
+
+**Performance esperado:**
+- Latencia: 10-20s
+- Recall: 85-95%
+- Solución: ÓPTIMA para este rango
+
+---
+
+#### **UMBRAL 2: 60-80 contratos (Ajustes Menores)**
+
+**Trigger:** Cuando queries agregativas empiezan a fallar en recall (< 85%)
+
+**Acciones necesarias:**
+
+1. **Aumentar k:**
+```python
+# rag_agent.py
+k = 100 if is_aggregative else 15  # Antes: 50
+```
+
+2. **Aumentar max_tokens:**
+```python
+# llm_config.py o rag_agent.py
+max_tokens = 8192  # Antes: 4096
+```
+
+3. **Monitorear latencia:**
+- Esperado: 15-25s (aceptable)
+- Si > 30s: Considerar UMBRAL 3
+
+**Tiempo implementación:** 5 minutos (cambiar 2 variables)
+
+---
+
+#### **UMBRAL 3: 80-150 contratos (Map-Reduce OBLIGATORIO)**
+
+**Trigger:** 
+- Recall < 80% en queries agregativas
+- O latencia > 30s
+- O contratos >= 80
+
+**⚠️ CAMBIO ARQUITECTÓNICO NECESARIO:**
+
+**Implementar patrón Map-Reduce:**
+```python
+# src/agents/aggregative_query_handler.py (CREAR NUEVO ARCHIVO)
+
+class AggregativeQueryHandler:
+    """
+    Handler Map-Reduce para queries tipo 'lista todos', 'suma total'
+    
+    FASE MAP: Extrae dato específico de cada chunk en paralelo
+    FASE AGGREGATE: Consolida resultados
+    FASE REDUCE: Formatea respuesta final
+    """
+    
+    def handle(self, query, chunks):
+        # MAP: Extraer garantías en paralelo (ThreadPoolExecutor)
+        extracted = self._map_extract(chunks)  # ~20s para 150 docs
+        
+        # AGGREGATE: Consolidar + deduplicar
+        aggregated = self._aggregate(extracted)  # ~0.5s
+        
+        # REDUCE: Generar tabla final
+        response = self._reduce_format(aggregated)  # ~2s
+        
+        return response  # Total: ~23s (vs 60s+ con approach simple)
+```
+
+**Integración en RAG Agent:**
+```python
+# rag_agent.py
+def query(self, user_query, use_citations=True):
+    
+    if is_aggregative_query(user_query) and self._estimate_docs() > 80:
+        # Usar Map-Reduce
+        return self.aggregative_handler.handle(user_query, chunks)
+    else:
+        # Flujo normal
+        return self._simple_query(user_query, chunks)
+```
+
+**Archivos a crear:**
+- `src/agents/aggregative_query_handler.py` (300 líneas)
+- `tests/test_aggregative_handler.py`
+
+**Tiempo implementación:** 4-6 horas
+
+**Performance esperado:**
+- Latencia: 15-25s (mejor que simple)
+- Recall: 95-100%
+- Escalable hasta 500 contratos
+
+---
+
+#### **UMBRAL 4: 500+ contratos (Arquitectura Avanzada)**
+
+**Trigger:** Volumen masivo de documentos
+
+**Acciones necesarias:**
+
+1. **Índices especializados:**
+```python
+# Pre-indexar por tipo de dato
+garantias_index = {...}  # Solo contratos con garantías
+confidencialidad_index = {...}  # Solo con cláusulas HPS
+por_expediente = {...}  # Agrupados por expediente
+```
+
+2. **Pre-agregación en background:**
+```python
+# Cron job nocturno que pre-calcula:
+# - Suma total de garantías
+# - Lista de contratos por tipo
+# - Estadísticas agregadas
+```
+
+3. **Caché de resultados:**
+```python
+# Redis o similar para queries frecuentes
+cache["suma_garantias"] = {"valor": 2.942.800, "timestamp": ...}
+```
+
+4. **Dashboard con datos pre-calculados:**
+- En lugar de query en tiempo real
+- Mostrar dashboard con métricas ya calculadas
+- Actualización diaria/semanal
+
+**Tiempo implementación:** 2-3 semanas
+
+---
+
+### 15.3 Decision Matrix (Guía Rápida)
+
+| Num Contratos | Approach | Latencia Esperada | Recall | Tiempo Implementación | Complejidad |
+|---------------|----------|-------------------|--------|----------------------|-------------|
+| **1-20** | Simple (actual) | 10-15s | 95% | ✅ Ya implementado | BAJA |
+| **20-60** | Simple (actual) | 12-20s | 90-95% | ✅ Ya implementado | BAJA |
+| **60-80** | Simple + k↑ + tokens↑ | 20-25s | 85-90% | 5 min | BAJA |
+| **80-150** | **Map-Reduce** | 15-25s | 95-100% | 4-6 horas | MEDIA |
+| **150-500** | Map-Reduce | 20-30s | 95-100% | 4-6 horas | MEDIA |
+| **500+** | **Índices + Pre-agregación** | 5-10s | 100% | 2-3 semanas | ALTA |
+
+---
+
+### 15.4 Señales de Alerta (Cuándo Actuar)
+
+**Monitorea estas métricas en Observability Dashboard:**
+```python
+# Señales de que necesitas escalar:
+
+ALERTA_RECALL_BAJO = {
+    "métrica": "recall_aggregative",
+    "threshold": 0.85,  # Si baja de 85%
+    "acción": "Aumentar k o implementar Map-Reduce"
+}
+
+ALERTA_LATENCIA_ALTA = {
+    "métrica": "latency_p95",
+    "threshold": 30.0,  # Si P95 > 30s
+    "acción": "Optimizar o cambiar arquitectura"
+}
+
+ALERTA_VOLUMEN = {
+    "métrica": "total_documentos",
+    "threshold": 80,  # Si >= 80 contratos
+    "acción": "Revisar Sección 15.2 UMBRAL 3"
+}
+```
+
+**Logging recomendado:**
+```python
+# En cada query agregativa, loggear:
+logger.info(f"📊 Query agregativa: {unique_docs} docs únicos recuperados")
+
+# Si unique_docs se acerca a k:
+if unique_docs >= k * 0.8:
+    logger.warning(f"⚠️ Recuperando cerca del límite ({unique_docs}/{k})")
+    logger.warning(f"⚠️ Considerar aumentar k o implementar Map-Reduce")
+```
+
+---
+
+### 15.5 Checklist Pre-Escalado
+
+Antes de implementar Map-Reduce u otra arquitectura, verifica:
+
+- [ ] ¿El recall actual es < 85% consistentemente?
+- [ ] ¿La latencia es > 25s en P95?
+- [ ] ¿Tienes >= 80 contratos?
+- [ ] ¿Has intentado aumentar k y max_tokens primero?
+- [ ] ¿Tienes 4-6 horas para implementar + testing?
+- [ ] ¿Has hecho backup del código actual?
+
+**Si todas son SÍ → Proceder con Map-Reduce (Sección 15.2 UMBRAL 3)**
+
+---
+
+### 15.6 Código de Referencia: Detector de Escalabilidad
+```python
+# src/utils/scalability_monitor.py (CREAR SI ESCALA)
+
+def check_scalability_status(vectorstore, recent_queries_log):
+    """
+    Analiza el sistema y recomienda acciones de escalabilidad
+    
+    Returns:
+        {
+            "status": "ok" | "warning" | "critical",
+            "recommendations": [...],
+            "metrics": {...}
+        }
+    """
+    
+    total_docs = vectorstore._collection.count() / 10  # Aprox docs únicos
+    
+    # Analizar queries agregativas recientes
+    agg_queries = [q for q in recent_queries_log if q["is_aggregative"]]
+    
+    if not agg_queries:
+        return {"status": "ok", "recommendations": []}
+    
+    avg_recall = sum(q["recall"] for q in agg_queries) / len(agg_queries)
+    avg_latency = sum(q["latency"] for q in agg_queries) / len(agg_queries)
+    
+    recommendations = []
+    status = "ok"
+    
+    # Checks
+    if total_docs >= 80:
+        status = "critical"
+        recommendations.append(
+            "🚨 CRÍTICO: >= 80 contratos detectados. "
+            "Implementar Map-Reduce (Blueprint Sección 15.2 UMBRAL 3)"
+        )
+    
+    elif total_docs >= 60:
+        status = "warning"
+        recommendations.append(
+            "⚠️ ADVERTENCIA: Cerca del límite (60+ contratos). "
+            "Aumentar k=100 y max_tokens=8192 (Blueprint Sección 15.2 UMBRAL 2)"
+        )
+    
+    if avg_recall < 0.85:
+        status = max(status, "warning")  # Elevar a warning si está en ok
+        recommendations.append(
+            f"⚠️ Recall bajo detectado ({avg_recall*100:.1f}%). "
+            "Considerar aumentar k o Map-Reduce"
+        )
+    
+    if avg_latency > 25:
+        status = max(status, "warning")
+        recommendations.append(
+            f"⚠️ Latencia alta ({avg_latency:.1f}s P95). "
+            "Optimizar o cambiar arquitectura"
+        )
+    
+    return {
+        "status": status,
+        "total_docs": total_docs,
+        "avg_recall": avg_recall,
+        "avg_latency": avg_latency,
+        "recommendations": recommendations
+    }
+```
+
+---
+
+### 15.7 Implementación Futura: Ejemplo Map-Reduce
+
+**Cuando llegues a 80+ contratos, implementa esto:**
+```python
+# src/agents/aggregative_query_handler.py
+
+from concurrent.futures import ThreadPoolExecutor
+from typing import List, Dict
+import logging
+
+logger = logging.getLogger(__name__)
+
+class AggregativeQueryHandler:
+    """
+    Patrón Map-Reduce para queries agregativas
+    Escalable a 500+ documentos
+    """
+    
+    def __init__(self, llm_mini):
+        self.llm_mini = llm_mini  # GPT-4o-mini para MAP (más barato)
+    
+    def handle(self, query: str, chunks: List) -> Dict:
+        """Procesa query agregativa con Map-Reduce"""
+        
+        logger.info(f"🔄 Map-Reduce: Procesando {len(chunks)} chunks")
+        
+        # FASE MAP: Extracción paralela
+        extracted = self._map_extract(query, chunks)
+        
+        # FASE AGGREGATE: Consolidación
+        aggregated = self._aggregate(extracted)
+        
+        # FASE REDUCE: Formateo
+        response = self._reduce_format(query, aggregated)
+        
+        return {
+            "answer": response,
+            "items": aggregated,
+            "method": "map-reduce"
+        }
+    
+    def _map_extract(self, query: str, chunks: List) -> List[Dict]:
+        """FASE MAP: Extrae datos en paralelo"""
+        
+        extraction_prompt = """
+Extrae SOLO el dato solicitado de este fragmento.
+
+QUERY: {query}
+FRAGMENTO: {chunk_text}
+
+RESPONDE:
+- Si existe: {{"contrato": "X", "valor": Y, "fuente": "Z"}}
+- Si NO existe: null
+
+SOLO JSON, sin explicaciones.
+"""
+        
+        def extract_one(chunk):
+            try:
+                prompt = extraction_prompt.format(
+                    query=query,
+                    chunk_text=chunk.page_content[:500]
+                )
+                response = self.llm_mini.invoke(prompt).content
+                
+                import json, re
+                match = re.search(r'\{.*\}', response, re.DOTALL)
+                return json.loads(match.group(0)) if match else None
+            except:
+                return None
+        
+        # Ejecutar en paralelo (10 workers)
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            results = list(executor.map(extract_one, chunks))
+        
+        return [r for r in results if r]
+    
+    def _aggregate(self, items: List[Dict]) -> List[Dict]:
+        """FASE AGGREGATE: Deduplicar y consolidar"""
+        unique = {}
+        for item in items:
+            key = item.get("contrato")
+            if key and key not in unique:
+                unique[key] = item
+        return list(unique.values())
+    
+    def _reduce_format(self, query: str, items: List[Dict]) -> str:
+        """FASE REDUCE: Formatear respuesta"""
+        
+        # Generar tabla
+        rows = []
+        total = 0
+        
+        for i, item in enumerate(items, 1):
+            contrato = item.get("contrato", "N/A")
+            valor = item.get("valor", 0)
+            fuente = item.get("fuente", "N/A")
+            
+            rows.append(f"| {i} | {contrato} | {valor:,.2f} EUR | {fuente} |")
+            total += float(valor)
+        
+        table = f"""
+| # | Contrato | Valor | Fuente |
+|---|----------|-------|--------|
+{chr(10).join(rows)}
+
+**TOTAL: {len(items)} contratos | SUMA: {total:,.2f} EUR**
+"""
+        return table
+```
+
+**Integración:**
+```python
+# rag_agent.py (modificar método query)
+
+if is_aggregative_query(user_query) and total_docs >= 80:
+    # Map-Reduce para volúmenes grandes
+    return self.aggregative_handler.handle(user_query, chunks)
+```
+
+---
+
+### 15.8 Métricas de Éxito por Etapa
+
+**Para validar que la escalabilidad funciona:**
+
+| Etapa | Métrica Clave | Target | Método Validación |
+|-------|---------------|--------|-------------------|
+| 20 contratos | Recall | > 95% | Golden Dataset |
+| 60 contratos | Recall + Latencia | > 90%, < 20s | Queries agregativas |
+| 100 contratos | Recall + Latencia | > 95%, < 25s | Map-Reduce tests |
+| 500+ contratos | Latencia | < 10s | Pre-agregación |
+
+---
+
+## 🎯 RESUMEN EJECUTIVO
+
+**Estado actual:** Sistema optimizado para 20-60 contratos
+**Próximo umbral crítico:** 80 contratos → Implementar Map-Reduce
+**Tiempo para escalar:** 4-6 horas de desarrollo + testing
+**Señales de alerta:** Recall < 85%, Latencia > 25s, Docs >= 80
+
+**Acción inmediata:** Ninguna (sistema actual es óptimo)
+**Monitorear:** Observability Dashboard → Recall y Latencia en queries agregativas
+**Revisar:** Esta sección cuando volumen de contratos aumente
+
+---
  # #   1 3 .   L E S S O N S   F R O M   P R O D U C T I O N   ( R e a l - W o r l d   D e b u g g i n g ) 
  
  
