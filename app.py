@@ -151,27 +151,27 @@ def dashboard_tab():
         <div style="display: flex; gap: 20px; margin-bottom: 40px;">
             <div style="flex: 1; background: linear-gradient(145deg, #ffffff 0%, #f1f5f9 100%); padding: 28px; border-radius: 20px; border: 1px solid #e2e8f0; border-left: 6px solid #000080; box-shadow: 8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff; position: relative; overflow: hidden;">
                 <div style="position: absolute; top: 0; right: 0; padding: 10px; opacity: 0.1; font-size: 3rem;">📊</div>
-                <div style="color: #64748b; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">Total Contratos</div>
-                <div style="color: #000080; font-size: 3rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; line-height: 1;">{summ.get('total', 0)}</div>
-                <div style="margin-top: 8px; font-size: 0.75rem; color: #000080; font-weight: 700; opacity: 0.7;">ACTIVOS EN SISTEMA</div>
+                <div style="color: #64748b; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">Total Contratos Analizados</div>
+                <div style="color: #000080; font-size: 3rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; line-height: 1;">{summ.get('contracts_count', 0)}</div>
+                <div style="margin-top: 8px; font-size: 0.75rem; color: #000080; font-weight: 700; opacity: 0.7;">TOTAL ALERTA: {summ.get('alerts_total', 0)}</div>
             </div>
             <div style="flex: 1; background: linear-gradient(145deg, #fffcfc 0%, #fff1f1 100%); padding: 28px; border-radius: 20px; border: 1px solid #fee2e2; border-left: 6px solid #ef4444; box-shadow: 8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff; position: relative; overflow: hidden;">
                 <div style="position: absolute; top: 0; right: 0; padding: 10px; opacity: 0.1; font-size: 3rem;">🚨</div>
-                <div style="color: #b91c1c; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">Prioridad ALTA</div>
+                <div style="color: #b91c1c; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">Alertas de Prioridad ALTA</div>
                 <div style="color: #ef4444; font-size: 3rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; line-height: 1;">{summ.get('high', 0)}</div>
                 <div style="margin-top: 8px; border-radius: 4px; background: #fee2e2; display: inline-block; padding: 2px 8px; font-size: 0.7rem; color: #ef4444; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">Acción Inmediata</div>
             </div>
             <div style="flex: 1; background: linear-gradient(145deg, #fffdfa 0%, #fff8eb 100%); padding: 28px; border-radius: 20px; border: 1px solid #fef3c7; border-left: 6px solid #f59e0b; box-shadow: 8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff; position: relative; overflow: hidden;">
                 <div style="position: absolute; top: 0; right: 0; padding: 10px; opacity: 0.1; font-size: 3rem;">⚠️</div>
-                <div style="color: #b45309; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">Prioridad MEDIA</div>
+                <div style="color: #b45309; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">Alertas de Prioridad MEDIA</div>
                 <div style="color: #f59e0b; font-size: 3rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; line-height: 1;">{summ.get('medium', 0)}</div>
                 <div style="margin-top: 8px; border-radius: 4px; background: #fef3c7; display: inline-block; padding: 2px 8px; font-size: 0.7rem; color: #f59e0b; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">Bajo Revisión</div>
             </div>
             <div style="flex: 1; background: linear-gradient(145deg, #fafffa 0%, #f0fdf4 100%); padding: 28px; border-radius: 20px; border: 1px solid #dcfce7; border-left: 6px solid #10b981; box-shadow: 8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff; position: relative; overflow: hidden;">
                 <div style="position: absolute; top: 0; right: 0; padding: 10px; opacity: 0.1; font-size: 3rem;">✅</div>
-                <div style="color: #15803d; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">Prioridad BAJA</div>
-                <div style="color: #10b981; font-size: 3rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; line-height: 1;">{summ.get('low', 0)}</div>
-                <div style="margin-top: 8px; border-radius: 4px; background: #dcfce7; display: inline-block; padding: 2px 8px; font-size: 0.7rem; color: #10b981; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">Estado Normal</div>
+                <div style="color: #15803d; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; font-family: 'Outfit', sans-serif;">Contratos SIN RIESGO</div>
+                <div style="color: #10b981; font-size: 3rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; line-height: 1;">{summ.get('contracts_clean', 0)}</div>
+                <div style="margin-top: 8px; border-radius: 4px; background: #dcfce7; display: inline-block; padding: 2px 8px; font-size: 0.7rem; color: #10b981; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">Estado Nominal</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -317,7 +317,7 @@ def chatbot_tab():
                         with c1:
                             st.caption(f"Chunks analizados: {fcts.get('chunks_analyzed')}")
                         with c2:
-                            st.caption(f"Score top chunk: {fcts.get('top_chunk_score'):.2f}")
+                            st.caption(f"Score top chunk: {fcts.get('top_chunk_score', 0.0):.2f}")
                 
                 # Mostrar validación si existe
                 if msg.get("validation"):
@@ -374,9 +374,18 @@ def chatbot_tab():
             
             # SPINNER: Aquí es donde debe ocurrir la espera visible
             with st.spinner("🧠 Procesando inteligencia táctica..."):
-                response = chat(query, history=history)
+                result = chat(query, history=history)
                 
-            st.session_state['messages'].append({"role": "assistant", "content": response})
+            # Extraer campos estructurados del resultado (que es un dict)
+            msg = {
+                "role": "assistant",
+                "content": result.get("response", "Sin respuesta"),
+                "validation": result.get("validation"),
+                "confidence": result.get("confidence"),
+                "sources": result.get("sources", []),
+                "contradictions": result.get("contradictions", [])
+            }
+            st.session_state['messages'].append(msg)
         except Exception as e:
             st.session_state['messages'].append({"role": "assistant", "content": f"⚠️ Error: {str(e)}"})
         
@@ -495,8 +504,9 @@ def generate_report():
             # AUTO-ENVIAR EMAIL con resumen
             if is_email_configured():
                 summ = st.session_state['alerts_summary']
-                resumen = f"""RESUMEN DE ALERTAS:
-• Total: {summ.get('total', 0)} alertas
+                resumen = f"""RESUMEN DE SITUACIÓN CONTRATOS:
+• Contratos Analizados: {summ.get('contracts_count', 0)}
+• Total Alertas: {summ.get('alerts_total', 0)}
 • Prioridad ALTA: {summ.get('high', 0)} (crítico)
 • Prioridad MEDIA: {summ.get('medium', 0)} (atención)
 • Prioridad BAJA: {summ.get('low', 0)} (normal)
@@ -585,11 +595,12 @@ def email_tab():
         st.markdown("---")
         st.subheader("📋 Resumen para copiar")
         summ = st.session_state['alerts_summary']
-        resumen_texto = f"""RESUMEN DE ALERTAS ({datetime.now().strftime('%d/%m/%Y')}):
-• Total: {summ.get('total', 0)} alertas
-• Prioridad ALTA: {summ.get('high', 0)}
-• Prioridad MEDIA: {summ.get('medium', 0)}
-• Prioridad BAJA: {summ.get('low', 0)}"""
+        resumen_texto = f"""RESUMEN DE SITUACIÓN CONTRATOS ({datetime.now().strftime('%d/%m/%Y')}):
+• Contratos Analizados: {summ.get('contracts_count', 0)}
+• Contratos sin Incidencias: {summ.get('contracts_clean', 0)}
+• Total Alertas Detectadas: {summ.get('alerts_total', 0)}
+• Alertas PRIORIDAD ALTA: {summ.get('high', 0)}
+• Alertas PRIORIDAD MEDIA: {summ.get('medium', 0)}"""
         st.code(resumen_texto, language=None)
 
 

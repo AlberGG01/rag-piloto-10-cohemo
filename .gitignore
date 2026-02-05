@@ -48,3 +48,16 @@ Thumbs.db
 models/
 *.gguf
 *.bin
+
+# Docker
+.env
+docker-compose.override.yml
+
+# Logs
+logs/*.log
+logs/*.txt
+logs/*.jsonl
+
+# VectorDB (se regenera)
+chroma_db/
+qdrant_storage/
