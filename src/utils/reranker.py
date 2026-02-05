@@ -41,10 +41,14 @@ class LocalReranker:
             try:
                 if torch.cuda.is_available():
                     device = "cuda"
+                    self._model_name = "BAAI/bge-reranker-v2-m3" # Heavy but accurate for GPU
                 elif torch.backends.mps.is_available():
                     device = "mps"
+                    self._model_name = "BAAI/bge-reranker-v2-m3"
                 else:
                     device = "cpu"
+                    # En CPU usamos modelo ultra-ligero (10x más rápido)
+                    self._model_name = "cross-encoder/ms-marco-MiniLM-L-6-v2"
                 
                 logger.info(f"🚀 Iniciando High-Performance Re-ranker ({self._model_name}) en DEVICE: [{device.upper()}]")
                 logger.info(f"   (Optimization: {'ENABLED' if device != 'cpu' else 'DISABLED'})")

@@ -117,7 +117,7 @@ Responde SOLO con el JSON válido.
         
         try:
             # Usamos modelo rápido y barato
-            response = self.call_llm(prompt, max_tokens=500, temperature=0.0, model="gpt-4o-mini")
+            response = self.call_llm(prompt, max_tokens=4096, temperature=0.0, model="gpt-4o-mini")
             
             clean_resp = response.replace("```json", "").replace("```", "").strip()
             result = json.loads(clean_resp)

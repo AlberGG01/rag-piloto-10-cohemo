@@ -427,7 +427,7 @@ def contextualize_query(query: str, history: List[Dict]) -> str:
         )
         
         logger.info("Contextualizando pregunta...")
-        response = generate_response(prompt, max_tokens=150, temperature=0.0)
+        response = generate_response(prompt, max_tokens=4096, temperature=0.0)
         
         cleaned = response.strip()
         if cleaned.lower().startswith("pregunta independiente:"):
@@ -555,6 +555,21 @@ def retrieve_and_generate(query: str, history: List[Dict] = None, use_citations:
              if contract_id:
                  filter_metadata = {"num_contrato": contract_id}
                  logger.info(f"🎯 Filtrando por contrato: {contract_id}")
+
+        # [CUSTOM LOGIC: Aggregative Queries (User Request)]
+        # Detectar queries agregativas (que piden "todos", "lista completa", etc)
+        is_aggregative = any(keyword in query.lower() for keyword in [
+            "todos", "todas", "completa", "total", "suma", "lista"
+        ])
+        
+        if is_aggregative:
+            # Ajustar k dinámicamente si es menor (para no reducir si ya era alto por alguna razón)
+            if top_k < 50:
+                top_k = 50
+            logger.info(f"🚀 Query tipo: AGREGATIVA (k={top_k}) - Override activado")
+        else:
+            logger.info(f"ℹ️ Query tipo: ESPECÍFICA (k={top_k})")
+
         
         chunks = hybrid_search(query, top_k=top_k, filter_metadata=filter_metadata)
         
@@ -697,7 +712,7 @@ def retrieve_and_generate(query: str, history: List[Dict] = None, use_citations:
     }}
     """
             
-            datos_extraidos = generate_response(extractor_v2, max_tokens=800, temperature=0.0, model=selected_model)
+            datos_extraidos = generate_response(extractor_v2, max_tokens=4096, temperature=0.0, model=selected_model)
             
             # Paso 2: Generación final con Verificación
             logger.info("Síntesis final con verificación de perito...")
@@ -738,7 +753,7 @@ def retrieve_and_generate(query: str, history: List[Dict] = None, use_citations:
     REDAC<!-- el informe AHORA:
     """
             
-            raw_response = generate_response(synthesis_prompt, max_tokens=700, temperature=0.0, model=selected_model)
+            raw_response = generate_response(synthesis_prompt, max_tokens=4096, temperature=0.0, model=selected_model)
             
             # Post-procesamiento: Reemplazar [Documento X] con nombres reales
             response = raw_response
@@ -784,8 +799,9 @@ def retrieve_and_generate(query: str, history: List[Dict] = None, use_citations:
             # Como hybrid_search devuelve dicts, simulamos score 0.8 si viene de vector, 0.6 de BM25 o 0.5 default
             chunks_with_scores = []
             for c in chunks:
-                # Intenta sacar score de metadatos si existe, sino heurística
-                s = c.get("metadata", {}).get("score", 0.7) 
+                # Intenta sacar score de metadatos (final_score es el bueno de hybrid search)
+                meta = c.get("metadata", {})
+                s = meta.get("final_score") or meta.get("score") or 0.7
                 chunks_with_scores.append((c, s))
             
             confidence = calculate_confidence(
@@ -907,7 +923,7 @@ RESPUESTA (Streaming):
         # 3. Stream generation
         for token in generate_response_stream(
             prompt=prompt,
-            max_tokens=1000,
+            max_tokens=4096,
             temperature=0.0
         ):
             yield token

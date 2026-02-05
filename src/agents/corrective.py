@@ -111,7 +111,7 @@ FORMATO JSON ESPERADO:
 
 Genera máximo 3 queries refinadas. Responde SOLO con el JSON válido."""
 
-        response = self.call_llm(prompt, max_tokens=500, temperature=0.3) # Un poco de creatividad para variar keywords
+        response = self.call_llm(prompt, max_tokens=4096, temperature=0.3) # Un poco de creatividad para variar keywords
         
         try:
             clean_resp = response.replace("```json", "").replace("```", "").strip()

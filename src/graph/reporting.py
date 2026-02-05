@@ -10,7 +10,7 @@ from pathlib import Path
 
 from src.config import NORMALIZED_PATH
 from src.utils.chunking import extract_metadata_from_text
-from src.agents.analyzer_agent import analyze_all_contracts
+from src.agents.analyzer_agent import analyze_all_contracts, analyze_contract
 from src.agents.report_agent import create_alerts_dataframe, generate_excel_report
 
 logger = logging.getLogger(__name__)
@@ -60,16 +60,22 @@ def run_quick_analysis() -> Dict:
         # 2. Ejecutar Analizador (Lógica de Negocio)
         alerts = analyze_all_contracts(extracted_data)
         
-        # 3. Calcular resumen
-        high_count = sum(1 for a in alerts if "🔴" in a["prioridad"])
-        medium_count = sum(1 for a in alerts if "🟡" in a["prioridad"])
-        low_count = sum(1 for a in alerts if "🟢" in a["prioridad"])
+        # 3. Calcular resumen (Basado en alertas para coincidir con la lista detallada)
+        high_alerts = sum(1 for a in alerts if "🔴" in a["prioridad"])
+        medium_alerts = sum(1 for a in alerts if "🟡" in a["prioridad"])
+        low_alerts = sum(1 for a in alerts if "🟢" in a["prioridad"])
         
+        # Conteo de contratos por estado para info adicional
+        contracts_with_alerts = len(set(a["expediente"] for a in alerts))
+        contracts_clean = len(extracted_data) - contracts_with_alerts
+
         alerts_summary = {
-            "total": len(alerts),
-            "high": high_count,
-            "medium": medium_count,
-            "low": low_count
+            "contracts_count": len(extracted_data),
+            "contracts_clean": contracts_clean,
+            "alerts_total": len(alerts),
+            "high": high_alerts,
+            "medium": medium_alerts,
+            "low": low_alerts
         }
         
         # 4. Generar Reportes (Report Agent Logic)

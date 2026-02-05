@@ -21,6 +21,112 @@ class ConfidenceScorer:
             "validation": 25             # Resultados del validator
         }
     
+    def detect_query_type(self, query: str) -> str:
+        """Detecta el tipo de query para aplicar lógica de confianza correcta"""
+        
+        aggregative_keywords = [
+            "todos", "todas", "lista", "identifica",
+            "suma", "total", "cuenta", "cuántos",
+            "desglosa", "desglose", "completa"
+        ]
+        
+        comparative_keywords = [
+            "compara", "comparación", "diferencia",
+            "versus", "vs", "entre"
+        ]
+        
+        query_lower = query.lower()
+        
+        if any(kw in query_lower for kw in aggregative_keywords):
+            return "aggregative"
+        elif any(kw in query_lower for kw in comparative_keywords):
+            return "comparative"
+        else:
+            return "specific"
+
+    def calculate_aggregative_confidence(
+        self,
+        answer: str,
+        query: str,
+        chunks_with_scores: List[tuple],
+        validation_result: Dict
+    ) -> Dict:
+        """Calcula confianza para queries agregativas (con validaciones)"""
+        
+        # Validación defensiva
+        if not chunks_with_scores:
+            return {
+                "confidence": 0.0,
+                "breakdown": {},
+                "items_found": 0,
+                "error": "No chunks for aggregative query"
+            }
+        
+        try:
+            # Factor 1: Coverage (60%) - ¿Cuántos items únicos?
+            # Extraer metadatos de los chunks
+            sources = []
+            for chunk, _ in chunks_with_scores:
+                if isinstance(chunk, dict):
+                    meta = chunk.get("metadata", {})
+                else:
+                     # Langchain doc object
+                    meta = getattr(chunk, "metadata", {})
+                
+                source = meta.get("archivo") or meta.get("source") or ""
+                if source:
+                    sources.append(source)
+                    
+            unique_sources = len(set(sources))
+            
+            # Estimar total esperado (heurística)
+            if "todos" in query.lower() or "todas" in query.lower():
+                estimated_total = 20  # Ajustar según tu caso
+            else:
+                estimated_total = unique_sources # Asumir recuperó todos si no es exhaustivo
+            
+            # Evitar división por cero
+            estimated_total = max(1, estimated_total)
+
+            coverage = min(100, (unique_sources / estimated_total) * 100)
+            
+            # Factor 2: Validation (30%)
+            validation_score = 100 if validation_result and validation_result.get("overall_valid") else 0
+            
+            # Factor 3: Completeness (10%)
+            summary_keywords = ["total", "suma", "resumen", "en total", "en conjunto"]
+            has_summary = any(kw in answer.lower() for kw in summary_keywords)
+            completeness = 100 if has_summary else 50
+            
+            # Calcular confianza final
+            confidence = (
+                coverage * 0.6 +
+                validation_score * 0.3 +
+                completeness * 0.1
+            )
+            
+            breakdown = {
+                "coverage": round(coverage, 1),
+                "validation": round(validation_score, 1),
+                "completeness": round(completeness, 1)
+            }
+            
+            return {
+                "confidence": round(confidence, 1),
+                "breakdown": breakdown,
+                "items_found": unique_sources,
+                "estimated_total": estimated_total,
+                "query_type": "aggregative"
+            }
+        except Exception as e:
+            logger.error(f"❌ Error en calculate_aggregative_confidence: {e}")
+            return {
+                "confidence": 0.0,
+                "breakdown": {},
+                "items_found": 0,
+                "error": str(e)
+            }
+
     def score_answer(
         self,
         answer: str,
@@ -28,24 +134,48 @@ class ConfidenceScorer:
         chunks_with_scores: List[tuple],  # [(chunk, score), ...]
         validation_result: Dict = None
     ) -> Dict[str, Any]:
-        """
-        Calcula score de confianza 0-100%
-        
-        Args:
-            answer: Respuesta generada
-            query: Query original del usuario
-            chunks_with_scores: Lista de (chunk, score) del retrieval
-            validation_result: Output del Answer Validator (opcional)
-        
-        Returns:
-            {
-                "confidence": float (0-100),
-                "breakdown": Dict[str, int],
-                "recommendation": str,
-                "factors": Dict[str, Any]
-            }
-        """
+        """Calcula score de confianza 0-100%"""
         logger.info("🎯 Calculando confidence score...")
+        
+        # Detectar tipo de query
+        query_type = self.detect_query_type(query)
+        logger.info(f"📋 Tipo de query detectado: {query_type}")
+        
+        if query_type == "aggregative":
+            # Usar lógica específica para agregativas
+            result = self.calculate_aggregative_confidence(
+                answer, query, chunks_with_scores, validation_result
+            )
+            confidence = result["confidence"]
+            breakdown = result["breakdown"]
+            recommendation = self._get_recommendation(confidence, breakdown, query_type)
+            
+            logger.info(f"📊 Breakdown (Agregativo): {breakdown}")
+            logger.info(f"🎯 Confidence final: {confidence:.1f}%")
+            
+            return {
+                "confidence": confidence,
+                "breakdown": breakdown,
+                "recommendation": recommendation,
+                "factors": {
+                    "query_type": query_type,
+                    "items_found": result["items_found"],
+                    "top_chunk_score": chunks_with_scores[0][1] if chunks_with_scores else 0.0,
+                    "chunks_analyzed": len(chunks_with_scores)
+                }
+            }
+        else:
+            # Lógica original (Specific)
+            return self._score_specific_answer(answer, query, chunks_with_scores, validation_result)
+
+    def _score_specific_answer(
+        self,
+        answer: str,
+        query: str,
+        chunks_with_scores: List[tuple],
+        validation_result: Dict = None
+    ) -> Dict[str, Any]:
+        """Lógica original de scoring para queries específicas"""
         
         # Factor 1: Calidad del Retrieval
         retrieval_score = self._score_retrieval_quality(chunks_with_scores)
@@ -75,15 +205,12 @@ class ConfidenceScorer:
             for factor in self.weights
         )
         
-        # Generar recomendación
-        recommendation = self._get_recommendation(confidence, breakdown)
+        recommendation = self._get_recommendation(confidence, breakdown, "specific")
         
-        # Log detallado
-        logger.info(f"📊 Breakdown:")
+        logger.info(f"📊 Breakdown (Specific):")
         for factor, score in breakdown.items():
             logger.info(f"  - {factor}: {score}/100")
         logger.info(f"🎯 Confidence final: {confidence:.1f}%")
-        logger.info(f"💡 Recomendación: {recommendation}")
         
         return {
             "confidence": round(confidence, 1),
@@ -91,10 +218,7 @@ class ConfidenceScorer:
             "recommendation": recommendation,
             "factors": {
                 "top_chunk_score": chunks_with_scores[0][1] if chunks_with_scores else 0,
-                "chunks_analyzed": len(chunks_with_scores),
-                "answer_length": len(answer.split()),
-                "has_numbers": bool(re.search(r'\d+', answer)),
-                "has_citations": bool(re.search(r'\[(?:Doc|Fuente):', answer))
+                "chunks_analyzed": len(chunks_with_scores)
             }
         }
     
@@ -119,11 +243,11 @@ class ConfidenceScorer:
              return 0
 
         
-        if top_score > 0.9:
+        if top_score >= 0.9:
             return 100
-        elif top_score > 0.7:
+        elif top_score >= 0.7:
             return 70
-        elif top_score > 0.5:
+        elif top_score >= 0.5:
             return 40
         else:
             return 20
@@ -267,24 +391,31 @@ class ConfidenceScorer:
         
         return list(set(entities))  # Únicos
     
-    def _get_recommendation(self, confidence: float, breakdown: Dict) -> str:
-        """Genera recomendación basada en score"""
+    def _get_recommendation(self, confidence: float, breakdown: Dict[str, int], query_type: str = "specific") -> str:
+        """Genera recomendación legible"""
         
-        if confidence >= 90:
-            return "✅ ALTA CONFIANZA - Respuesta validada y fiable"
-        
-        elif confidence >= 70:
-            return "🟢 CONFIANZA BUENA - Respuesta aceptable, revisar si es crítica"
-        
-        elif confidence >= 50:
-            # Identificar factor débil
-            weak_factor = min(breakdown, key=breakdown.get)
-            return f"🟡 CONFIANZA MEDIA - Factor débil: {weak_factor}. Revisar manualmente"
-        
+        if query_type == "aggregative":
+            # Mensajes para queries agregativas
+            if confidence >= 90:
+                return "🟢 ALTA COBERTURA - Recuperó >90% de items esperados"
+            elif confidence >= 70:
+                return "🟢 BUENA COBERTURA - Recuperó ~70-90% de items"
+            elif confidence >= 50:
+                return "🟡 COBERTURA MEDIA - Recuperó ~50-70% de items"
+            else:
+                return "🔴 BAJA COBERTURA - Recuperó <50% de items"
         else:
-            # Identificar factores críticos
-            critical = [f for f, score in breakdown.items() if score < 40]
-            return f"🔴 BAJA CONFIANZA - Problemas en: {', '.join(critical)}. Requiere validación humana"
+            # Mensajes originales para queries específicas
+            if confidence >= 90:
+                return "✅ CONFIANZA ALTA - Usar directamente"
+            elif confidence >= 70:
+                return "🟢 CONFIANZA BUENA - Aceptable"
+            elif confidence >= 50:
+                return "🟡 CONFIANZA MEDIA - Revisar manualmente"
+            else:
+                return "🔴 CONFIANZA BAJA - Requiere validación humana"
+    
+
 
 
 # ========== FUNCIÓN HELPER ==========

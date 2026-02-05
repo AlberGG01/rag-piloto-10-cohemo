@@ -142,7 +142,7 @@ Responde SOLO con el JSON válido."""
         # Usar json_mode=True implícito via prompt engineering robusto o config si disponible
         # AHORA VIA call_llm para Rate Limit Protection
         # [MODIFICACIÓN ESCUDO FINANCIERO]: Usamos gpt-4o-mini para evaluación (30x más barato)
-        response = self.call_llm(prompt, max_tokens=500, temperature=0.0, model="gpt-4o-mini")
+        response = self.call_llm(prompt, max_tokens=4096, temperature=0.0, model="gpt-4o-mini")
         
         try:
             clean_resp = response.replace("```json", "").replace("```", "").strip()

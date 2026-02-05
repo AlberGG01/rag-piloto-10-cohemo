@@ -155,25 +155,22 @@ Procede con la respuesta. Recuerda: 0% tolerancia a claims sin citar.
     
     def _post_process_citations(self, response: str, chunks: List[Dict]) -> str:
         """
-        Post-procesamiento de citaciones:
-        - Verifica que todas las citas sean válidas
-        - Formatea consistentemente
-        - Añade advertencias si faltan citas
+        Post-procesamiento de citaciones
+        
+        NOTA: Las advertencias de citación se manejan en Answer Validator.
+        Este método solo formatea las citas existentes, no añade warnings.
         """
-        # Extraer todas las citaciones del formato [Fuente: ...]
+        # Extraer citaciones existentes para verificación
         citations = re.findall(r'\[Fuente:([^\]]+)\]', response)
         
         logger.info(f"📌 {len(citations)} citaciones encontradas en respuesta")
         
-        # Verificar que claims críticos estén citados
-        uncited_claims = self._find_uncited_claims(response)
+        # ========== ELIMINADO: Validación de claims sin citar ==========
+        # El Answer Validator ya maneja esto en la capa de validación
+        # No añadimos advertencias redundantes al texto de la respuesta
         
-        if uncited_claims:
-            logger.warning(f"⚠️ {len(uncited_claims)} claims sin citar detectados")
-            
-            # Añadir advertencia al final
-            response += f"\n\n⚠️ **ADVERTENCIA:** {len(uncited_claims)} afirmaciones críticas sin fuente verificada."
-        
+        # Simplemente retornar la respuesta como está
+        # (con las citaciones que el LLM ya generó)
         return response
     
     def _find_uncited_claims(self, text: str) -> List[str]:
